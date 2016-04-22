@@ -1,15 +1,20 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import requests, base64, os, shutil, re, math
-import fulltext
+from collections import defaultdict, deque
+from pprint import pprint
+from xml.etree import ElementTree as et
 
+import base64
+import fulltext
+import math
+import os
+import re
+import requests
+import shutil
 from pyproj import Proj
 from tqdm import tqdm
-from xml.etree import ElementTree as et
-from pprint import pprint
-from sys import exit
-from collections import defaultdict, deque
+
 
 def get_address(member, addresses, proj):
     try:
@@ -17,38 +22,40 @@ def get_address(member, addresses, proj):
             address = member[key]
             coordinates = address["ReferencePoint"]["Point"]["coordinates"].split(",")
             longitude, latitude = proj(coordinates[0], coordinates[1], inverse=True)
-            addresses[key].append((address["Tunnus"], address["PikkAadress"], (coordinates[0], coordinates[1]), (latitude, longitude)))    
+            addresses[key].append(
+                (address["Tunnus"], address["PikkAadress"], (coordinates[0], coordinates[1]), (latitude, longitude)))
     except KeyError:
         print "parse_address: key not found"
+
 
 def get_element_tag(tag):
     if '}' in tag:
         return tag.split('}', 1)[1]
-    return tag    
+    return tag
+
 
 def main():
-
     ###############################################################################
     # my address
     ###############################################################################
 
     # VAIKEKOHT,TANAV,KATASTRIYKSUS,EHITISHOONE
     querystring = {
-        "dogis_link" : "getgazetteer",
-        "features" : "EHITISHOONE", 
-        "results" : "5"
-        }
+        "dogis_link": "getgazetteer",
+        "features": "EHITISHOONE",
+        "results": "5"
+    }
 
-    #25°24'14.586"E 59°29'9.822"N
-    #579555,6595094
+    # 25°24'14.586"E 59°29'9.822"N
+    # 579555,6595094
 
     address = raw_input("Sisesta otsitav aadress (või vajuta ENTER): ")
     if not address:
         address = "Lõuna tee 15, Mäepea küla"
 
     querystring["address"] = address
-    response = requests.request("GET", "http://xgis.maaamet.ee/xGIS/XGis", params = querystring)
-    proj = Proj(init="epsg:3301") #L-EST97
+    response = requests.request('GET', 'http://xgis.maaamet.ee/xGIS/XGis', params=querystring)
+    proj = Proj(init="epsg:3301")  # L-EST97
 
     addresses = defaultdict(list)
     try:
@@ -87,26 +94,26 @@ def main():
     url = "http://server.amphora.ee/atp/vihulavv/AmphoraPublic.asmx"
     headers = {
         "content-type": "application/x-www-form-urlencoded"
-        }
+    }
 
     ###############################################################################
 
     payload = {
-    	"type" : "DOCUMENT", 
-        "topicID" : "50139", 
-        "maxRows" : "20",
-    	"unitID" : "", 
-        "folderID" : "", 
-        "formID" : "", 
-        "phrase" : "", 
-        "startRowIndex" : "", 
-        "detailMetadata" : ""
-    	}    	
+        "type": "DOCUMENT",
+        "topicID": "5059",
+        "maxRows": "20",
+        "unitID": "",
+        "folderID": "",
+        "formID": "",
+        "phrase": "",
+        "startRowIndex": "",
+        "detailMetadata": ""
+    }
 
     articles = dict()
-    response = requests.post(url + "/GetItemList", data = payload, headers = headers, stream = True)
+    response = requests.post(url + "/GetItemList", data=payload, headers=headers, stream=True)
     response.raw.decode_content = True
-    
+
     for event, element in et.iterparse(response.raw):
         if get_element_tag(element.tag) == "sys_id" and element.text != "259449" and element.text != "259430":
             articles[element.text] = dict()
@@ -119,29 +126,29 @@ def main():
 
     articles_folder = "/Users/arank/src/maa/tmp/"
     if os.path.exists(articles_folder):
-        shutil.rmtree(articles_folder) 
+        shutil.rmtree(articles_folder)
     os.makedirs(articles_folder)
 
     progress = tqdm(articles)
     for key in progress:
         progress.set_description("Dokumendid %s" % key)
         payload = {
-            "id" : key, 
-            "maxDepth" : "0"
+            "id": key,
+            "maxDepth": "0"
         }
-        response = requests.request("POST", url + "/GetItem", data=payload, headers=headers, stream = True)
+        response = requests.request("POST", url + "/GetItem", data=payload, headers=headers, stream=True)
         response.raw.decode_content = True
 
         path = deque()
         content = None
         filename = None
         filetype = None
-        for event, element in et.iterparse(response.raw, events=("start", "end")):            
+        for event, element in et.iterparse(response.raw, events=("start", "end")):
             element_tag = get_element_tag(element.tag)
             if event == "start":
                 path.append(element_tag)
             elif event == "end":
-                if "file" in path: 
+                if "file" in path:
                     if element_tag == "data":
                         content = base64.decodestring(element.text or "")
                     elif element_tag == "filename":
@@ -161,7 +168,7 @@ def main():
                 out.close()
                 break
         else:
-            print "no data for", key 
+            print "no data for", key
 
         response.close()
 
@@ -173,17 +180,17 @@ def main():
 
     url = "http://geoportaal.maaamet.ee/url/xgis-ky.php"
     querystring = {
-        "what":"tsentroid",
-        "out":"json"
+        "what": "tsentroid",
+        "out": "json"
     }
-    
+
     pattern = re.compile("\d{5}:\d{3}:\d{4}")
     _, _, (x, y), wgs94 = addresses["EHITISHOONE"][0]
     progress = tqdm(articles)
     for key in progress:
         progress.set_description("Koordinaadid %s" % key)
         articles[key]["katastrinumbrid"] = list()
-        if not "file" in articles[key]:
+        if "file" not in articles[key]["file"]:
             continue
         text = fulltext.get(articles_folder + articles[key]["file"])
         katastrinumbrid = set(pattern.findall(text))
@@ -193,11 +200,12 @@ def main():
             try:
                 json = response.json()["1"]
                 distance_km = math.sqrt((float(json["X"]) - float(x)) ** 2 + (float(json["Y"]) - float(y)) ** 2) / 1000
-                longitude, latitude = proj(json["X"], json["Y"], inverse=True) #long / lat
-                articles[key]["katastrinumbrid"].append((number, (json["X"], json["Y"]), distance_km, (latitude, longitude))) 
+                longitude, latitude = proj(json["X"], json["Y"], inverse=True)  # long / lat
+                articles[key]["katastrinumbrid"].append(
+                    (number, (json["X"], json["Y"]), distance_km, (latitude, longitude)))
             except (ValueError, KeyError):
-                print "coordinates not found", response.status_code, key, number
-            response.close()                
+                print 'coordinates not found', response.status_code, key, number
+            response.close()
 
     print "======================================================================="
 
@@ -208,16 +216,10 @@ def main():
             print "---------------"
             for number in articles[key]["katastrinumbrid"]:
                 knumber, lest97, kaugus, (latitude, longitude) = number
-                print knumber, " koordinaadid:", latitude, ",", longitude, " kaugus leitud aadressist:", format(kaugus, '.2f')
+                print knumber, " koordinaadid:", latitude, ",", longitude, " kaugus leitud aadressist:", format(kaugus,
+                                                                                                                '.2f')
             print "======================================================================="
+
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-
