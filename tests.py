@@ -1,17 +1,31 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+# Copyright 2016 Allan Rank
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import base64
+import math
+import os
+import re
+import shutil
 from collections import defaultdict, deque
 from pprint import pprint
 from xml.etree import ElementTree as et
 
-import base64
 import fulltext
-import math
-import os
-import re
 import requests
-import shutil
 from pyproj import Proj
 from tqdm import tqdm
 
@@ -39,6 +53,8 @@ def main():
     # my address
     ###############################################################################
 
+    proj = Proj(init="epsg:3301")  # L-EST97
+
     # VAIKEKOHT,TANAV,KATASTRIYKSUS,EHITISHOONE
     querystring = {
         "dogis_link": "getgazetteer",
@@ -55,7 +71,6 @@ def main():
 
     querystring["address"] = address
     response = requests.request('GET', 'http://xgis.maaamet.ee/xGIS/XGis', params=querystring)
-    proj = Proj(init="epsg:3301")  # L-EST97
 
     addresses = defaultdict(list)
     try:
@@ -91,7 +106,7 @@ def main():
     # Maakorraldus – 50344    
     ###############################################################################
 
-    url = "http://server.amphora.ee/atp/vihulavv/AmphoraPublic.asmx"
+    url = "http://server.amphora.ee/atp/kuusaluvv/AmphoraPublic.asmx"
     headers = {
         "content-type": "application/x-www-form-urlencoded"
     }
