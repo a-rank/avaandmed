@@ -42,7 +42,7 @@ def main():
     #25°24'14.586"E 59°29'9.822"N
     #579555,6595094
 
-    address = raw_input('Sisesta otsitav aadress: ')
+    address = raw_input("Sisesta otsitav aadress (või vajuta ENTER): ")
     if not address:
         address = "Lõuna tee 15, Mäepea küla"
 
@@ -72,7 +72,7 @@ def main():
     pprint(lest97)
     print "======================================================================="
 
-    raw_input()
+    raw_input("(vajuta ENTER):")
 
     ###############################################################################
     # amphora articles
@@ -84,7 +84,7 @@ def main():
     # Maakorraldus – 50344    
     ###############################################################################
 
-    url = "http://server.amphora.ee/atp/kuusaluvv/AmphoraPublic.asmx"
+    url = "http://server.amphora.ee/atp/vihulavv/AmphoraPublic.asmx"
     headers = {
         "content-type": "application/x-www-form-urlencoded"
         }
@@ -93,7 +93,7 @@ def main():
 
     payload = {
     	"type" : "DOCUMENT", 
-        "topicID" : "5059", 
+        "topicID" : "50139", 
         "maxRows" : "20",
     	"unitID" : "", 
         "folderID" : "", 
@@ -161,7 +161,7 @@ def main():
                 out.close()
                 break
         else:
-            print "no data for ", key 
+            print "no data for", key 
 
         response.close()
 
@@ -183,6 +183,8 @@ def main():
     for key in progress:
         progress.set_description("Koordinaadid %s" % key)
         articles[key]["katastrinumbrid"] = list()
+        if not "file" in articles[key]:
+            continue
         text = fulltext.get(articles_folder + articles[key]["file"])
         katastrinumbrid = set(pattern.findall(text))
         for number in katastrinumbrid:
@@ -194,7 +196,7 @@ def main():
                 longitude, latitude = proj(json["X"], json["Y"], inverse=True) #long / lat
                 articles[key]["katastrinumbrid"].append((number, (json["X"], json["Y"]), distance_km, (latitude, longitude))) 
             except (ValueError, KeyError):
-                print "coordinates not found", response.status_code
+                print "coordinates not found", response.status_code, key, number
             response.close()                
 
     print "======================================================================="
@@ -202,7 +204,7 @@ def main():
     for key in progress:
         if articles[key]["katastrinumbrid"]:
             print "---------------"
-            print "Dokument: ", key, articles[key]["title"]
+            print "Dokument:", key, articles[key]["title"]
             print "---------------"
             for number in articles[key]["katastrinumbrid"]:
                 knumber, lest97, kaugus, (latitude, longitude) = number
