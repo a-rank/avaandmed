@@ -35,6 +35,7 @@ def get_address(member, addresses, proj):
         for key in member:
             address = member[key]
             coordinates = address["ReferencePoint"]["Point"]["coordinates"].split(",")
+            # geo koordinaatide teisaldamine projekteeritud koordinaatidest
             longitude, latitude = proj(coordinates[0], coordinates[1], inverse=True)
             addresses[key].append(
                 (address["Tunnus"], address["PikkAadress"], (coordinates[0], coordinates[1]), (latitude, longitude)))
@@ -53,7 +54,7 @@ def main():
     # my address
     ###############################################################################
 
-    proj = Proj(init="epsg:3301")  # L-EST97
+    proj = Proj(init="epsg:3301")  # L-EST97 projektsioon
 
     # VAIKEKOHT,TANAV,KATASTRIYKSUS,EHITISHOONE
     querystring = {
@@ -62,13 +63,14 @@ def main():
         "results": "5"
     }
 
-    # 25°24'14.586"E 59°29'9.822"N
-    # 579555,6595094
-
     address = raw_input("Sisesta otsitav aadress (või vajuta ENTER): ")
     if not address:
+        # GEO:      25°24'14.586"E 59°29'9.822"N
+        # LEST97:   579555,6595094
         address = "Lõuna tee 15, Mäepea küla"
 
+    # Maa-ameti teenus aadressiinfo (sealhulgas koordinaatide) saamiseks
+    # http://geoportaal.maaamet.ee/est/Teenused/X-GIS-JSON-aadressiotsingu-teenuse-kirjeldus-p502.html
     querystring["address"] = address
     response = requests.request('GET', 'http://xgis.maaamet.ee/xGIS/XGis', params=querystring)
 
@@ -85,12 +87,12 @@ def main():
 
     response.close()
 
-    tunnus, address, lest97, wgs94 = addresses["EHITISHOONE"][0]
+    tunnus, address, lest97, geo = addresses["EHITISHOONE"][0]
     print "======================================================================="
     print "Leitud aadress:"
     print address
     print "Koordinaadid:"
-    pprint(wgs94)
+    pprint(geo)
     pprint(lest97)
     print "======================================================================="
 
@@ -139,7 +141,7 @@ def main():
     # articles
     ###############################################################################
 
-    articles_folder = "/Users/arank/src/maa/tmp/"
+    articles_folder = os.path.dirname(os.path.abspath(__file__)) + "/documents/"
     if os.path.exists(articles_folder):
         shutil.rmtree(articles_folder)
     os.makedirs(articles_folder)
@@ -199,13 +201,16 @@ def main():
         "out": "json"
     }
 
+    point = lambda coordinate: float(coordinate)
+    distance = lambda src, dest: math.sqrt((point(src[0]) - point(dest[0])) ** 2 + (point(src[1]) - point(dest[1])) ** 2)
+
     pattern = re.compile("\d{5}:\d{3}:\d{4}")
-    _, _, (x, y), wgs94 = addresses["EHITISHOONE"][0]
+    _, _, x_y, _ = addresses["EHITISHOONE"][0]
     progress = tqdm(articles)
     for key in progress:
         progress.set_description("Koordinaadid %s" % key)
         articles[key]["katastrinumbrid"] = list()
-        if "file" not in articles[key]["file"]:
+        if "file" not in articles[key]:
             continue
         text = fulltext.get(articles_folder + articles[key]["file"])
         katastrinumbrid = set(pattern.findall(text))
@@ -214,8 +219,8 @@ def main():
             response = requests.request("GET", url, params=querystring)
             try:
                 json = response.json()["1"]
-                distance_km = math.sqrt((float(json["X"]) - float(x)) ** 2 + (float(json["Y"]) - float(y)) ** 2) / 1000
-                longitude, latitude = proj(json["X"], json["Y"], inverse=True)  # long / lat
+                distance_km = distance(x_y, (json["X"], json["Y"])) / 1000
+                longitude, latitude = proj(json["X"], json["Y"], inverse=True)
                 articles[key]["katastrinumbrid"].append(
                     (number, (json["X"], json["Y"]), distance_km, (latitude, longitude)))
             except (ValueError, KeyError):
@@ -224,15 +229,14 @@ def main():
 
     print "======================================================================="
 
-    for key in progress:
+    for key in articles:
         if articles[key]["katastrinumbrid"]:
             print "---------------"
             print "Dokument:", key, articles[key]["title"]
             print "---------------"
             for number in articles[key]["katastrinumbrid"]:
                 knumber, lest97, kaugus, (latitude, longitude) = number
-                print knumber, " koordinaadid:", latitude, ",", longitude, " kaugus leitud aadressist:", format(kaugus,
-                                                                                                                '.2f')
+                print knumber, " koordinaadid:", latitude, ",", longitude, " kaugus leitud aadressist:", kaugus
             print "======================================================================="
 
 
