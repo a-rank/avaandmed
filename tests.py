@@ -40,7 +40,7 @@ def get_address(member, addresses, proj):
             addresses[key].append(
                 (address["Tunnus"], address["PikkAadress"], (coordinates[0], coordinates[1]), (latitude, longitude)))
     except KeyError:
-        print "parse_address: key not found"
+        print "parse_address: vigane json"
 
 
 def get_element_tag(tag):
@@ -51,7 +51,7 @@ def get_element_tag(tag):
 
 def main():
     ###############################################################################
-    # my address
+    # minu aadress
     ###############################################################################
 
     proj = Proj(init="epsg:3301")  # L-EST97 projektsioon
@@ -65,8 +65,8 @@ def main():
 
     address = raw_input("Sisesta otsitav aadress (või vajuta ENTER): ")
     if not address:
-        # GEO:      25°24'14.586"E 59°29'9.822"N
-        # LEST97:   579555,6595094
+        # 25°24'14.586"E 59°29'9.822"N
+        # 579555,6595094
         address = "Lõuna tee 15, Mäepea küla"
 
     # Maa-ameti teenus aadressiinfo (sealhulgas koordinaatide) saamiseks
@@ -83,7 +83,7 @@ def main():
             for member in json:
                 get_address(member, addresses, proj)
     except (ValueError, KeyError):
-        print "address not found", response.status_code
+        print "ei leitud", response.status_code
 
     response.close()
 
@@ -92,14 +92,14 @@ def main():
     print "Leitud aadress:"
     print address
     print "Koordinaadid:"
-    pprint(geo)
-    pprint(lest97)
+    pprint(geo)     #geograafilised koordinaadid
+    pprint(lest97)  #projekteeritud koordinaadid
     print "======================================================================="
 
     raw_input("(vajuta ENTER):")
 
     ###############################################################################
-    # amphora articles
+    # amphora teemad
     # Planeerimine ja ehitus - 5059 
     # Detailplaneeringute algatamine - 50285 
     # Detailplaneeringute kehtestamine - 50286 
@@ -108,6 +108,7 @@ def main():
     # Maakorraldus – 50344    
     ###############################################################################
 
+    #kuusalu valla dokumendiregister
     url = "http://server.amphora.ee/atp/kuusaluvv/AmphoraPublic.asmx"
     headers = {
         "content-type": "application/x-www-form-urlencoded"
@@ -127,18 +128,21 @@ def main():
         "detailMetadata": ""
     }
 
+    #dokumentide nimekirja päring registrist
     articles = dict()
     response = requests.post(url + "/GetItemList", data=payload, headers=headers, stream=True)
     response.raw.decode_content = True
 
+    #259449 ja 259430 on suured dokumendid, need jäetakse demo mõttes hetkel välja
     for event, element in et.iterparse(response.raw):
         if get_element_tag(element.tag) == "sys_id" and element.text != "259449" and element.text != "259430":
             articles[element.text] = dict()
         element.clear()
 
     response.close()
+
     ###############################################################################
-    # articles
+    # dokumendid
     ###############################################################################
 
     articles_folder = os.path.dirname(os.path.abspath(__file__)) + "/documents/"
@@ -146,6 +150,7 @@ def main():
         shutil.rmtree(articles_folder)
     os.makedirs(articles_folder)
 
+    # üksikute dokumentide metadata ja faili päring
     progress = tqdm(articles)
     for key in progress:
         progress.set_description("Dokumendid %s" % key)
@@ -153,6 +158,8 @@ def main():
             "id": key,
             "maxDepth": "0"
         }
+
+        #dokumendi päring
         response = requests.request("POST", url + "/GetItem", data=payload, headers=headers, stream=True)
         response.raw.decode_content = True
 
@@ -180,51 +187,54 @@ def main():
             if content is not None and filename is not None and filetype == "MAIN_FILE":
                 _, extension = os.path.splitext(filename)
                 articles[key]["file"] = key + extension
-                out = open(articles_folder + key + extension, "wb")
+                out = open(articles_folder + key + extension, "wb") #faili salvestamine
                 out.write(content)
                 out.close()
                 break
         else:
-            print "no data for", key
+            print "ei sisalda faili", key
 
         response.close()
 
     print "======================================================================="
 
     ###############################################################################
-    # files
+    # failid
     ###############################################################################
 
+    # Maa-ameti teenus koordinaatide pärimiseks katastrinumbri järgi
+    #http://geoportaal.maaamet.ee/est/Teenused/Poordumine-kaardirakendusse-labi-URLi-p9.html#a13
     url = "http://geoportaal.maaamet.ee/url/xgis-ky.php"
     querystring = {
         "what": "tsentroid",
         "out": "json"
     }
 
+    #kauguse arvutus projekteeritud koordinaatidega
     point = lambda coordinate: float(coordinate)
     distance = lambda src, dest: math.sqrt((point(src[0]) - point(dest[0])) ** 2 + (point(src[1]) - point(dest[1])) ** 2)
 
-    pattern = re.compile("\d{5}:\d{3}:\d{4}")
-    _, _, x_y, _ = addresses["EHITISHOONE"][0]
+    pattern = re.compile("\d{5}:\d{3}:\d{4}") #regexp katastrinumbri leindmiseks tekstist
+    _, _, x_y, _ = addresses["EHITISHOONE"][0] #minu aadress
     progress = tqdm(articles)
     for key in progress:
         progress.set_description("Koordinaadid %s" % key)
         articles[key]["katastrinumbrid"] = list()
         if "file" not in articles[key]:
             continue
-        text = fulltext.get(articles_folder + articles[key]["file"])
+        text = fulltext.get(articles_folder + articles[key]["file"]) #pdf, doc ja rtf failide konverteerimine tekstiks
         katastrinumbrid = set(pattern.findall(text))
         for number in katastrinumbrid:
             querystring["ky"] = number
-            response = requests.request("GET", url, params=querystring)
+            response = requests.request("GET", url, params=querystring) #koordinaatide päring maaametist
             try:
                 json = response.json()["1"]
-                distance_km = distance(x_y, (json["X"], json["Y"])) / 1000
-                longitude, latitude = proj(json["X"], json["Y"], inverse=True)
+                distance_km = distance(x_y, (json["X"], json["Y"])) / 1000 #katastrinumbri kaugus minu aadressist
+                longitude, latitude = proj(json["X"], json["Y"], inverse=True) #katastrinumbri geograafilised koordinaadid (saab otse kopeerida google mapsi)
                 articles[key]["katastrinumbrid"].append(
                     (number, (json["X"], json["Y"]), distance_km, (latitude, longitude)))
             except (ValueError, KeyError):
-                print 'coordinates not found', response.status_code, key, number
+                print "koordinaate ei leitud", response.status_code, key, number
             response.close()
 
     print "======================================================================="
@@ -236,7 +246,7 @@ def main():
             print "---------------"
             for number in articles[key]["katastrinumbrid"]:
                 knumber, lest97, kaugus, (latitude, longitude) = number
-                print knumber, " koordinaadid:", latitude, ",", longitude, " kaugus leitud aadressist:", kaugus
+                print knumber, " koordinaadid:", latitude, ",", longitude, " kaugus minu aadressist:", kaugus
             print "======================================================================="
 
 
