@@ -16,12 +16,11 @@
 # limitations under the License.
 
 from app import create_app
+from flask_script import Manager
 from config import DevConfig, ProdConfig
 
+app = create_app(DevConfig)
+manager = Manager(app)
 
-app = create_app(ProdConfig)
-app.run(
-    host='0.0.0.0',
-    port=app.config['PORT'],
-    debug=app.config['DEBUG']
-)
+if __name__ == '__main__':
+    manager.run()

@@ -19,7 +19,6 @@ import os
 
 class Config(object):
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    PORT = 8080
 
 class ProdConfig(Config):
     DEBUG = False
