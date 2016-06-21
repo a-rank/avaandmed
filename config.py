@@ -17,11 +17,14 @@
 
 import os
 
+
 class Config(object):
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
+
 class ProdConfig(Config):
     DEBUG = False
+
 
 class DevConfig(Config):
     DEBUG = True

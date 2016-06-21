@@ -20,7 +20,9 @@ from flask import Flask
 
 def create_app(config):
     app = Flask(__name__)
+
     app.config.from_object(config)
+    app.url_map.strict_slashes = False
 
     from api_v1 import api as api_v1_blueprint
     app.register_blueprint(api_v1_blueprint, url_prefix='/v1')
