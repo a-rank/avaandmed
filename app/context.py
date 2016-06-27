@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # Copyright 2016 Allan Rank
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from app import create_app
-from flask_script import Manager
-from config import DevConfig, ProdConfig
+import os
+import sys
 
-app = create_app(DevConfig)
-manager = Manager(app)
-
-if __name__ == '__main__':
-    manager.run()
+sys.path.insert(0, os.path.abspath('..'))
+from modules.kovtp import Kovtp

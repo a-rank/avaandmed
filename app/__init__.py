@@ -1,6 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 # Copyright 2016 Allan Rank
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +13,9 @@
 # limitations under the License.
 
 from flask import Flask
+from .context import Kovtp
+
+kovtp = Kovtp()
 
 
 def create_app(config):
