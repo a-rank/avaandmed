@@ -1,0 +1,2 @@
+export JSONWS_USERNAME=""
+export JSONWS_PASSWORD="" 

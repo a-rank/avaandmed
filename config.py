@@ -17,6 +17,9 @@ import os
 
 class Config(object):
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+    JSONWS_URL = "https://www.kuusalu.ee/api/secure/jsonws/"
+    JSONWS_USERNAME = os.environ.get("JSONWS_USERNAME")
+    JSONWS_PASSWORD = os.environ.get("JSONWS_PASSWORD")
 
 
 class ProdConfig(Config):

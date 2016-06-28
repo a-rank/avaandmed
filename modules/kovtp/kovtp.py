@@ -13,11 +13,26 @@
 # limitations under the License.
 
 class Kovtp:
-    def __init__(self):
-        pass
+    #: url for liferay's json web services
+    jsonws_url = None
+
+    #: username for liferay's json web services
+    jsonws_username = None
+
+    #: password for liferay's json web services
+    jsonws_password = None
+
+    def __init__(self, jsonws_url=None, jsonws_username=None,
+                 jsonws_password=None):
+        if jsonws_url is not None:
+            self.jsonws_url = jsonws_url
+        if jsonws_username is not None:
+            self.jsonws_username = jsonws_username
+        if jsonws_password is not None:
+            self.jsonws_password = jsonws_password
 
     def get_articles(self):
-        pass
+        return self.jsonws_username
 
     def get_article(self):
         pass
