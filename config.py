@@ -20,7 +20,7 @@ class Config(object):
     JSONWS_URL = "https://www.kuusalu.ee/api/secure/jsonws/"
     JSONWS_USERNAME = os.environ.get("JSONWS_USERNAME")
     JSONWS_PASSWORD = os.environ.get("JSONWS_PASSWORD")
-
+    JOBS_CATEGORY_ID = 11510878
 
 class ProdConfig(Config):
     DEBUG = False

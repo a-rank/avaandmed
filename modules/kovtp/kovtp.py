@@ -11,15 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import requests
+from requests.auth import HTTPBasicAuth
+
 
 class Kovtp:
-    #: url for liferay's json web services
+    #: base url for liferay's json web service
     jsonws_url = None
 
-    #: username for liferay's json web services
+    #: username for liferay's json web service
     jsonws_username = None
 
-    #: password for liferay's json web services
+    #: password for liferay's json web service
     jsonws_password = None
 
     def __init__(self, jsonws_url=None, jsonws_username=None,
@@ -31,8 +34,34 @@ class Kovtp:
         if jsonws_password is not None:
             self.jsonws_password = jsonws_password
 
-    def get_articles(self):
-        return self.jsonws_username
+    #: com.liferay.portlet.asset.service.AssetEntryServiceUtil#getEntries
+    def get_asset_entries(self, category_id):
+        parameters = "+entryQuery/entryQuery.allCategoryIds/{id}/entryQuery.orderByCol1/createDate/".format(
+            id=category_id)
+        url = "{base_url}assetentry/get-entries/{parameters}".format(base_url=self.jsonws_url, parameters=parameters)
+        response = requests.get(url, auth=HTTPBasicAuth(self.jsonws_username, self.jsonws_password))
+        return response.json()
 
-    def get_article(self):
-        pass
+    #: com.liferay.portlet.asset.service.AssetEntryServiceUtil#getEntriesCount
+    def get_asset_entries_count(self, category_id):
+        parameters = "+entryQuery/entryQuery.allCategoryIds/{id}/".format(id=category_id)
+        url = "{base_url}assetentry/get-entries-count/{parameters}".format(base_url=self.jsonws_url,
+                                                                           parameters=parameters)
+        response = requests.get(url, auth=HTTPBasicAuth(self.jsonws_username, self.jsonws_password))
+        return response.text()
+
+    #: com.liferay.portlet.journal.service.JournalArticleServiceUtil#getLatestArticle
+    def get_latest_article(self, resource_prim_key):
+        parameters = "resource-prim-key/{id}".format(id=resource_prim_key)
+        url = "{base_url}journalarticle/get-latest-article/{parameters}".format(base_url=self.jsonws_url,
+                                                                                parameters=parameters)
+        response = requests.get(url, auth=HTTPBasicAuth(self.jsonws_username, self.jsonws_password))
+        return response.json()
+
+    #: com.liferay.portlet.journal.service.JournalArticleServiceUtil#getArticle
+    def get_article(self, group_id, article_id):
+        parameters = "group-id/{group_id}/article-id/{article_id}".format(group_id=group_id, article_id=article_id)
+        url = "{base_url}journalarticle/get-article/{parameters}".format(base_url=self.jsonws_url,
+                                                                         parameters=parameters)
+        response = requests.get(url, auth=HTTPBasicAuth(self.jsonws_username, self.jsonws_password))
+        return response.json()
