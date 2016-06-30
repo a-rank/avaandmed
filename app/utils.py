@@ -12,23 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from bs4 import BeautifulSoup
 
 
-class Config(object):
-    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    JSONWS_URL = "https://www.kuusalu.ee/api/secure/jsonws/"
-    JSONWS_USERNAME = os.environ.get("JSONWS_USERNAME")
-    JSONWS_PASSWORD = os.environ.get("JSONWS_PASSWORD")
-    JSONWS_JOBS_CATEGORY_ID = 11510878
-    JSONWS_NEWS_CATEGORY_ID = 7619124
-    JSONWS_CATEGORY_ID = 7610268
-    JSONWS_COMPANY_ID = 7610243
-
-
-class ProdConfig(Config):
-    DEBUG = False
-
-
-class DevConfig(Config):
-    DEBUG = True
+def extract_content(html):
+    result = {"text": "", "images": []}
+    soup = BeautifulSoup(html, 'html5lib')
+    result["text"] = " ".join(soup.stripped_strings)
+    links = soup.find_all('img', src=True)
+    result["images"] = [link["src"] for link in links]
+    return result
