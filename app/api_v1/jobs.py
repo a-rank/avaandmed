@@ -1,7 +1,7 @@
 from flask import jsonify, current_app, url_for
 from . import api
 from .. import kovtp
-from ..utils import extract_content
+from ..utils import extract_content_or_404
 
 
 @api.route("/jobs/")
@@ -31,7 +31,7 @@ def get_jobs():
 @api.route("/jobs/<int:id>")
 def get_job(id):
     article = kovtp.get_latest_article(id)
-    content = extract_content(article.get("content", ""))
+    content = extract_content_or_404(article)
     return jsonify({
         "id": id,
         "url": url_for('api.get_job', id=id, _external=True),

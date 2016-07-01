@@ -13,12 +13,19 @@
 # limitations under the License.
 
 from bs4 import BeautifulSoup
-
+from flask import abort
 
 def extract_content(html):
     result = {"text": "", "images": []}
     soup = BeautifulSoup(html, 'html5lib')
+    images = soup.find_all('img', src=True)
+    result["images"] = [image["src"] for image in images]
     result["text"] = " ".join(soup.stripped_strings)
-    links = soup.find_all('img', src=True)
-    result["images"] = [link["src"] for link in links]
     return result
+
+
+def extract_content_or_404(article):
+    if not "content" in article:
+        abort(404)
+    else:
+        return extract_content(article["content"])

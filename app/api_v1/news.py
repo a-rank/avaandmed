@@ -1,7 +1,7 @@
-from flask import jsonify, current_app, url_for
+from flask import jsonify, current_app, url_for, abort
 from . import api
 from .. import kovtp
-from ..utils import extract_content
+from ..utils import extract_content_or_404
 
 
 @api.route("/news/")
@@ -30,7 +30,7 @@ def get_all_news():
 @api.route("/news/<int:id>")
 def get_news(id):
     article = kovtp.get_latest_article(id)
-    content = extract_content(article["content"])
+    content = extract_content_or_404(article)
     return jsonify({
         "id": id,
         "created_date": article["createDate"],
