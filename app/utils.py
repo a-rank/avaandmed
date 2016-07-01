@@ -14,8 +14,10 @@
 
 from bs4 import BeautifulSoup
 from flask import abort
+from datetime import datetime, timedelta
 
-def extract_content(html):
+
+def get_content(html):
     result = {"text": "", "images": []}
     soup = BeautifulSoup(html, 'html5lib')
     images = soup.find_all('img', src=True)
@@ -24,8 +26,17 @@ def extract_content(html):
     return result
 
 
-def extract_content_or_404(article):
+def get_content_or_404(article):
     if not "content" in article:
         abort(404)
     else:
-        return extract_content(article["content"])
+        return get_content(article["content"])
+
+
+def timestamp_to_8601(timestamp):
+    int_timestamp = int(timestamp if timestamp is not None else 0)
+    if int_timestamp:
+        date = datetime(1970, 1, 1) + timedelta(milliseconds=int_timestamp)
+        return date.isoformat()
+    else:
+        return ""
