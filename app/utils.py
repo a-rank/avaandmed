@@ -50,19 +50,25 @@ class Pagination:
         self.page_size = current_app.config["PAGE_SIZE"]
 
     def start(self):
-        return (self.page - 1) * self.page_size
+        if self.page >= 1:
+            return (self.page - 1) * self.page_size
+        else:
+            return 0
 
     def end(self):
-        return self.page * self.page_size
+        if self.page >= 1:
+            return self.page * self.page_size
+        else:
+            return 0
 
     def next_url(self, results_count):
-        if results_count < self.page_size:
+        if results_count != self.page_size:
             return None
         else:
             return url_for(self.base, page=self.page + 1, _external=True)
 
     def prev_url(self):
-        if self.page == 1:
+        if self.page <= 1:
             return None
         else:
             return url_for(self.base, page=self.page - 1, _external=True)

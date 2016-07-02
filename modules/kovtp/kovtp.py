@@ -27,12 +27,6 @@ class Kovtp:
 
     def __init__(self, jsonws_url=None, jsonws_username=None,
                  jsonws_password=None):
-        # type: (object, object, object) -> object
-        # type: (object, object, object) -> object
-        """
-
-        :rtype: object
-        """
         if jsonws_url is not None:
             self.jsonws_url = jsonws_url
         if jsonws_username is not None:
@@ -41,14 +35,11 @@ class Kovtp:
             self.jsonws_password = jsonws_password
 
     #: com.liferay.portlet.asset.service.AssetEntryServiceUtil#getEntries
-    def get_asset_entries(self, category_id, start=0, end=0):
-        parameters = "+entryQuery/entryQuery.allCategoryIds/{id}/entryQuery.orderByCol1/createDate".format(
-            id=category_id)
-        if end and end > start:
-            parameters = "{parameters}/entryQuery.start/{start}/entryQuery.end/{end}".format(start=start, end=end,
-                                                                                             parameters=parameters)
-        url = "{base_url}assetentry/get-entries/{parameters}".format(base_url=self.jsonws_url,
-                                                                     parameters=parameters)
+    def get_asset_entries(self, category_id, start, end):
+        parameters = "+entryQuery/entryQuery.allCategoryIds/{id}".format(id=category_id)
+        paging = "entryQuery.start/{start}/entryQuery.end/{end}".format(start=start, end=end)
+        url = "{base_url}assetentry/get-entries/{parameters}/{paging}".format(base_url=self.jsonws_url,
+                                                                              parameters=parameters, paging=paging)
         response = requests.get(url, auth=HTTPBasicAuth(self.jsonws_username, self.jsonws_password))
         return response.json()
 
