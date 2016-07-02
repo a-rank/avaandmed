@@ -15,6 +15,7 @@
 from bs4 import BeautifulSoup
 from flask import abort
 from datetime import datetime, timedelta
+from flask import current_app, url_for
 
 
 def get_content(html):
@@ -40,3 +41,28 @@ def timestamp_to_8601(timestamp):
         return date.isoformat()
     else:
         return ""
+
+
+class Pagination:
+    def __init__(self, base, page):
+        self.base = base
+        self.page = page
+        self.page_size = current_app.config["PAGE_SIZE"]
+
+    def start(self):
+        return (self.page - 1) * self.page_size
+
+    def end(self):
+        return self.page * self.page_size
+
+    def next_url(self, results_count):
+        if results_count < self.page_size:
+            return None
+        else:
+            return url_for(self.base, page=self.page + 1, _external=True)
+
+    def prev_url(self):
+        if self.page == 1:
+            return None
+        else:
+            return url_for(self.base, page=self.page - 1, _external=True)

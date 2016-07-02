@@ -17,6 +17,7 @@ from .context import Kovtp
 
 kovtp = Kovtp()
 
+
 def create_app(config):
     app = Flask(__name__)
 

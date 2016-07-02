@@ -24,6 +24,7 @@ class Config(object):
     JSONWS_NEWS_CATEGORY_ID = 7619124
     JSONWS_CATEGORY_ID = 7610268
     JSONWS_COMPANY_ID = 7610243
+    PAGE_SIZE = 10
 
 
 class ProdConfig(Config):
