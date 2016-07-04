@@ -34,8 +34,9 @@ def get_all_news():
 
 @api.route("/news/<int:id>")
 def get_news(id):
+    result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)
-    content = get_content_or_404(article)
+    content = get_content_or_404(article, result_type)
     return jsonify({
         "id": id,
         "created_date": timestamp_to_8601(article.get("createDate", "")),
@@ -43,7 +44,9 @@ def get_news(id):
         "title": article.get("titleCurrentValue", ""),
         "url": url_for('api.get_news', id=id, _external=True),
         "links": {
-            "images": [{"url": image} for image in content["images"]]
+            "images": content["images"],
+            "documents": content["documents"],
+            "other": content["links"]
         },
         "content": content["text"],
         "portal_url": article.get("urlTitle", "")

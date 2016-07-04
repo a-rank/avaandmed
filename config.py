@@ -25,7 +25,7 @@ class Config(object):
     JSONWS_CATEGORY_ID = 7610268
     JSONWS_COMPANY_ID = 7610243
     PAGE_SIZE = 10
-
+    HTML_PARSER = "lxml"
 
 class ProdConfig(Config):
     DEBUG = False

@@ -35,8 +35,9 @@ def get_jobs():
 
 @api.route("/jobs/<int:id>")
 def get_job(id):
+    result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)
-    content = get_content_or_404(article)
+    content = get_content_or_404(article, result_type)
     return jsonify({
         "id": id,
         "url": url_for('api.get_job', id=id, _external=True),
@@ -44,7 +45,9 @@ def get_job(id):
         "expiration_date": timestamp_to_8601(article.get("expirationDate", "")),
         "title": article.get("titleCurrentValue", ""),
         "links": {
-            "images": [{"url": image} for image in content["images"]]
+            "images": content["images"],
+            "documents": content["documents"],
+            "other": content["links"]
         },
         "content": content["text"],
         "portal_url": article.get("urlTitle", "")

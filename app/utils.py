@@ -16,22 +16,45 @@ from bs4 import BeautifulSoup
 from flask import abort
 from datetime import datetime, timedelta
 from flask import current_app, url_for
+from lxml import etree
+import re
 
 
-def get_content(html):
-    result = {"text": "", "images": []}
-    soup = BeautifulSoup(html, 'html5lib')
-    images = soup.find_all('img', src=True)
-    result["images"] = [image["src"] for image in images]
-    result["text"] = " ".join(soup.stripped_strings)
+def get_content(html, result_type):
+    result = {
+        "text": "",
+        "images": [], "links": [], "documents": []
+    }
+    root = etree.fromstring(html)
+    contents = root.xpath("//static-content[@language-id='et_EE']")
+    content = next(iter(contents), None)
+    if content is not None:
+        soup = BeautifulSoup(content.text, current_app.config["HTML_PARSER"])
+        images = soup.find_all("img")
+        result["images"] = [{"url": image["src"]} for image in images]
+
+        pattern = re.compile("(\.pdf)|(\.doc)|(\.docx)|(\.bdoc)|(\.odt)|(\.xls)|(\.ods)")
+        links = soup.find_all("a")
+        for link in links:
+            result_link = {"url": link["href"], "title": link.get_text(strip=True)}
+            if pattern.search(link["href"]) is not None:
+                result["documents"].append(result_link)
+            else:
+                result["links"].append(result_link)
+
+        if result_type == "html":
+            result["text"] = content.text
+        else:
+            result["text"] = " ".join(soup.stripped_strings)
+
     return result
 
 
-def get_content_or_404(article):
+def get_content_or_404(article, result_type="plain"):
     if not "content" in article:
         abort(404)
     else:
-        return get_content(article["content"])
+        return get_content(article["content"], result_type)
 
 
 def timestamp_to_8601(timestamp):
