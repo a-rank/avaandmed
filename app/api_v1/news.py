@@ -1,8 +1,8 @@
 from flask import jsonify, current_app, url_for, request
 from . import api
 from .. import kovtp
-from ..utils import get_content_or_404, timestamp_to_8601
 from ..utils import Pagination
+from ..utils import get_content_or_404, timestamp_to_8601
 
 
 @api.route("/news/")

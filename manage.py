@@ -15,11 +15,26 @@
 # limitations under the License.
 
 from app import create_app
-from flask_script import Manager
+from flask_script import Manager, Server
 from config import DevConfig, ProdConfig
 
 app = create_app(DevConfig)
 manager = Manager(app)
+
+
+@manager.shell
+def make_shell_context():
+    return dict(
+        app=app
+    )
+
+
+@manager.option("-s", "--script", dest="path", default=None)
+@manager.command
+def env(path):
+    "Sets enviroment variables needed for running doku"
+    print path
+
 
 if __name__ == '__main__':
     manager.run()
