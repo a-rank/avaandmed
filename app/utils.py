@@ -17,7 +17,7 @@ from flask import abort
 from datetime import datetime, timedelta
 from flask import current_app, url_for
 from lxml import etree
-import re
+from re import compile as re_compile
 
 
 def get_content(html, result_type):
@@ -33,11 +33,15 @@ def get_content(html, result_type):
         images = soup.find_all("img")
         result["images"] = [{"url": image["src"]} for image in images]
 
-        pattern = re.compile("(\.pdf)|(\.doc)|(\.docx)|(\.bdoc)|(\.odt)|(\.xls)|(\.ods)")
+        documents_pattern = re_compile(current_app.config["DOCUMENTS_PATTERN"])
         links = soup.find_all("a")
         for link in links:
-            result_link = {"url": link["href"], "title": link.get_text(strip=True)}
-            if pattern.search(link["href"]) is not None:
+            if link["href"].startswith("/documents/"):
+                link_url = ''.join([current_app.config["KOVTP_URL"], link["href"]])
+            else:
+                link_url = link["href"]
+            result_link = {"url": link_url, "title": link.get_text(strip=True)}
+            if documents_pattern.search(link_url) is not None:
                 result["documents"].append(result_link)
             else:
                 result["links"].append(result_link)

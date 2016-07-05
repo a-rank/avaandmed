@@ -17,7 +17,8 @@ import os
 
 class Config(object):
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-    JSONWS_URL = "https://www.kuusalu.ee/api/secure/jsonws/"
+    KOVTP_URL = "http://www.kuusalu.ee"
+    JSONWS_URL = "https://www.kuusalu.ee/api/secure/jsonws"
     JSONWS_USERNAME = os.environ.get("JSONWS_USERNAME")
     JSONWS_PASSWORD = os.environ.get("JSONWS_PASSWORD")
     JSONWS_JOBS_CATEGORY_ID = 11510878
@@ -26,6 +27,8 @@ class Config(object):
     JSONWS_COMPANY_ID = 7610243
     PAGE_SIZE = 10
     HTML_PARSER = "lxml"
+    DOCUMENTS_PATTERN = "(\.pdf)|(\.doc)|(\.docx)|(\.bdoc)|(\.odt)|(\.xls)|(\.ods)|(\.dwg)"
+
 
 class ProdConfig(Config):
     DEBUG = False
