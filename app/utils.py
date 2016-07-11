@@ -12,53 +12,101 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString, Tag
 from flask import abort
 from datetime import datetime, timedelta
 from flask import current_app, url_for
 from lxml import etree
-from re import compile as re_compile
+from re import compile as re_compile, sub as re_sub
+from unicodedata import normalize
 
 
-def get_content(html, result_type):
+def get_cdata_from_content_or_404(content):
+    root = etree.fromstring(content)
+    contents = root.xpath("//static-content[@language-id='et_EE']")
+    cdata = next(iter(contents), None)
+    if cdata is None:
+        abort(404)
+    return re_sub("[\n\t]", "", cdata.text)
+
+
+def get_content_from_article_or_404(article):
+    if not "content" in article:
+        abort(404)
+    return article["content"]
+
+
+def parse_article_or_404(article, result_type="plain"):
     result = {
         "text": "",
         "images": [], "links": [], "documents": []
     }
-    root = etree.fromstring(html)
-    contents = root.xpath("//static-content[@language-id='et_EE']")
-    content = next(iter(contents), None)
-    if content is not None:
-        soup = BeautifulSoup(content.text, current_app.config["HTML_PARSER"])
-        images = soup.find_all("img")
-        result["images"] = [{"url": image["src"]} for image in images]
+    content = get_content_from_article_or_404(article)
+    cdata = get_cdata_from_content_or_404(content)
+    soup = BeautifulSoup(cdata, current_app.config["HTML_PARSER"])
 
-        documents_pattern = re_compile(current_app.config["DOCUMENTS_PATTERN"])
-        links = soup.find_all("a")
-        for link in links:
-            if link["href"].startswith("/documents/"):
-                link_url = ''.join([current_app.config["KOVTP_URL"], link["href"]])
-            else:
-                link_url = link["href"]
-            result_link = {"url": link_url, "title": link.get_text(strip=True)}
-            if documents_pattern.search(link_url) is not None:
-                result["documents"].append(result_link)
-            else:
-                result["links"].append(result_link)
+    images = soup.find_all("img")
+    result["images"] = [{"url": image["src"]} for image in images]
 
-        if result_type == "html":
-            result["text"] = content.text
+    documents_pattern = re_compile(current_app.config["DOCUMENTS_PATTERN"])
+    links = soup.find_all("a")
+    for link in links:
+        if link["href"].startswith("/documents/"):
+            link_url = ''.join([current_app.config["KOVTP_URL"], link["href"]])
         else:
-            result["text"] = " ".join(soup.stripped_strings)
+            link_url = link["href"]
+
+        result_link = {"url": link_url, "title": link.get_text(strip=True)}
+        if documents_pattern.search(link_url) is not None:
+            result["documents"].append(result_link)
+        else:
+            result["links"].append(result_link)
+
+    if result_type == "html":
+        result["text"] = cdata
+    else:
+        result["text"] = " ".join(soup.stripped_strings)
 
     return result
 
 
-def get_content_or_404(article, result_type="plain"):
-    if not "content" in article:
-        abort(404)
-    else:
-        return get_content(article["content"], result_type)
+def add_schedule(schedule, element):
+    text = normalize("NFKD", unicode(element)).strip()
+    if len(text):
+        schedule.append(text)
+
+
+def traverse_schedule_tree(schedule, title, element):
+    for child in element.children:
+        if isinstance(child, Tag):
+            title = traverse_schedule_tree(schedule, title, child)
+        elif isinstance(child, NavigableString):
+            if title is None:
+                title = unicode(child).strip()
+            else:
+                add_schedule(schedule, child)
+    return title
+
+
+def parse_busses_article_or_404(article):
+    result = []
+    content = get_content_from_article_or_404(article)
+    cdata = get_cdata_from_content_or_404(content)
+    soup = BeautifulSoup(cdata, current_app.config["HTML_PARSER"])
+    sections = soup.find_all("p")
+
+    title = None
+    for section in sections:
+        schedule = []
+        title = traverse_schedule_tree(schedule, title, section)
+
+        if len(schedule):
+            result.append({"title": title, "schedule": schedule})
+            title = None
+        if section.strong is None:
+            title = None
+
+    return result
 
 
 def timestamp_to_8601(timestamp):

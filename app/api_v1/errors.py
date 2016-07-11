@@ -16,6 +16,13 @@ def page_not_found(e):
     return response
 
 
+@api.app_errorhandler(405)
+def page_not_found(e):
+    response = jsonify({'error': 'method not allowed'})
+    response.status_code = 405
+    return response
+
+
 @api.app_errorhandler(500)
 def internal_server_error(e):
     response = jsonify({'error': 'internal server error'})

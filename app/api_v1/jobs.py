@@ -1,7 +1,7 @@
 from flask import jsonify, current_app, url_for, request
 from . import api
 from .. import kovtp
-from ..utils import get_content_or_404, timestamp_to_8601
+from ..utils import parse_article_or_404, timestamp_to_8601
 from ..utils import Pagination
 
 
@@ -37,7 +37,7 @@ def get_jobs():
 def get_job(id):
     result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)
-    content = get_content_or_404(article, result_type)
+    job = parse_article_or_404(article, result_type)
     return jsonify({
         "id": id,
         "url": url_for('api.get_job', id=id, _external=True),
@@ -45,10 +45,10 @@ def get_job(id):
         "expiration_date": timestamp_to_8601(article.get("expirationDate", "")),
         "title": article.get("titleCurrentValue", ""),
         "links": {
-            "images": content["images"],
-            "documents": content["documents"],
-            "other": content["links"]
+            "images": job["images"],
+            "documents": job["documents"],
+            "other": job["links"]
         },
-        "content": content["text"],
+        "content": job["text"],
         "portal_url": article.get("urlTitle", "")
     })
