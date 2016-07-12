@@ -17,7 +17,7 @@ from flask import abort
 from datetime import datetime, timedelta
 from flask import current_app, url_for
 from lxml import etree
-from re import compile as re_compile, sub as re_sub
+from re import compile as re_compile, sub as re_sub, findall as re_findall
 from unicodedata import normalize
 
 
@@ -74,7 +74,8 @@ def parse_article_or_404(article, result_type="plain"):
 def add_schedule(schedule, element):
     text = normalize("NFKD", unicode(element)).strip()
     if len(text):
-        schedule.append(text)
+        timetable = re_findall("\d{1},\d{2}", text)
+        schedule.append([timetable, text])
 
 
 def traverse_schedule_tree(schedule, route, element):
