@@ -37,37 +37,38 @@ def get_content_from_article_or_404(article):
 
 
 def parse_article_or_404(article, result_type="plain"):
-    result = {
-        "text": "",
-        "images": [], "links": [], "documents": []
-    }
+    text = None
+    images = []
+    links = []
+    documents = []
+
     content = get_content_from_article_or_404(article)
     cdata = get_cdata_from_content_or_404(content)
     soup = BeautifulSoup(cdata, current_app.config["HTML_PARSER"])
 
-    images = soup.find_all("img")
-    result["images"] = [{"url": image["src"]} for image in images]
+    image_tags = soup.find_all("img")
+    images = [{"url": tag["src"]} for tag in image_tags]
 
     documents_pattern = re_compile(current_app.config["DOCUMENTS_PATTERN"])
-    links = soup.find_all("a")
-    for link in links:
-        if link["href"].startswith("/documents/"):
-            link_url = ''.join([current_app.config["KOVTP_URL"], link["href"]])
+    link_tags = soup.find_all("a")
+    for tag in link_tags:
+        if tag["href"].startswith("/documents/"):
+            link_url = ''.join([current_app.config["KOVTP_URL"], tag["href"]])
         else:
-            link_url = link["href"]
+            link_url = tag["href"]
 
-        result_link = {"url": link_url, "title": link.get_text(strip=True)}
+        result_link = {"url": link_url, "title": tag.get_text(strip=True)}
         if documents_pattern.search(link_url) is not None:
-            result["documents"].append(result_link)
+            documents.append(result_link)
         else:
-            result["links"].append(result_link)
+            links.append(result_link)
 
     if result_type == "html":
-        result["text"] = cdata
+        text = cdata
     else:
-        result["text"] = " ".join(soup.stripped_strings)
+        text = " ".join(soup.stripped_strings)
 
-    return result
+    return (text, images, links, documents)
 
 
 def add_schedule(schedule, element):
@@ -76,16 +77,16 @@ def add_schedule(schedule, element):
         schedule.append(text)
 
 
-def traverse_schedule_tree(schedule, title, element):
+def traverse_schedule_tree(schedule, route, element):
     for child in element.children:
         if isinstance(child, Tag):
-            title = traverse_schedule_tree(schedule, title, child)
+            route = traverse_schedule_tree(schedule, route, child)
         elif isinstance(child, NavigableString):
-            if title is None:
-                title = unicode(child).strip()
+            if route is None:
+                route = unicode(child).strip()
             else:
                 add_schedule(schedule, child)
-    return title
+    return route
 
 
 def parse_busses_article_or_404(article):
@@ -93,18 +94,18 @@ def parse_busses_article_or_404(article):
     content = get_content_from_article_or_404(article)
     cdata = get_cdata_from_content_or_404(content)
     soup = BeautifulSoup(cdata, current_app.config["HTML_PARSER"])
-    sections = soup.find_all("p")
 
-    title = None
-    for section in sections:
+    paragraph_tags = soup.find_all("p")
+    route = None
+    for tag in paragraph_tags:
         schedule = []
-        title = traverse_schedule_tree(schedule, title, section)
+        route = traverse_schedule_tree(schedule, route, tag)
 
         if len(schedule):
-            result.append({"title": title, "schedule": schedule})
-            title = None
-        if section.strong is None:
-            title = None
+            result.append((route, schedule))
+            route = None
+        if tag.strong is None:
+            route = None
 
     return result
 
