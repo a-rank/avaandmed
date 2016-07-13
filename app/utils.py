@@ -53,10 +53,9 @@ def parse_article_or_404(article, result_type="plain"):
     link_tags = soup.find_all("a")
     for tag in link_tags:
         if tag["href"].startswith("/documents/"):
-            link_url = ''.join([current_app.config["KOVTP_URL"], tag["href"]])
+            link_url = "".join([current_app.config["KOVTP_URL"], tag["href"]])
         else:
             link_url = tag["href"]
-
         result_link = {"url": link_url, "title": tag.get_text(strip=True)}
         if documents_pattern.search(link_url) is not None:
             documents.append(result_link)
@@ -72,10 +71,14 @@ def parse_article_or_404(article, result_type="plain"):
 
 
 def add_schedule(schedule, element):
-    text = normalize("NFKD", unicode(element)).strip()
-    if len(text):
-        timetable = re_findall("\d{1},\d{2}", text)
-        schedule.append([timetable, text])
+    name = normalize("NFKD", unicode(element)).strip()
+    if len(name):
+        times = re_findall("\d*[,.:]\d{2}", name)
+        timetable = []
+        for time in times:
+            hour, minute = re_sub("[,.]", ":", time).split(":")
+            timetable.append("{:02d}:{:1s}".format(int(hour), minute))
+        schedule.append({"time": timetable, "name": name})
 
 
 def traverse_schedule_tree(schedule, route, element):

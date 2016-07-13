@@ -21,7 +21,7 @@ from ..utils import Pagination
 
 @api.route("/jobs/")
 def get_jobs():
-    page = request.args.get('page', 1, type=int)
+    page = request.args.get("page", 1, type=int)
     category_id = current_app.config["JSONWS_JOBS_CATEGORY_ID"]
     pagination = Pagination("api.get_jobs", page)
     assets = kovtp.get_asset_entries(category_id, pagination.start(), pagination.end())
@@ -31,7 +31,7 @@ def get_jobs():
         if asset_id:
             jobs.append({
                 "id": asset_id,
-                "url": url_for('api.get_job', id=asset_id, _external=True),
+                "url": url_for("api.get_job", id=asset_id, _external=True),
                 "created_date": timestamp_to_8601(asset.get("createDate", "")),
                 "expiration_date": timestamp_to_8601(asset.get("expirationDate", "")),
                 "modified_date": timestamp_to_8601(asset.get("modifiedDate", "")),
@@ -54,7 +54,7 @@ def get_job(id):
     text, images, links, documents = parse_article_or_404(article, result_type)
     return jsonify({
         "id": id,
-        "url": url_for('api.get_job', id=id, _external=True),
+        "url": url_for("api.get_job", id=id, _external=True),
         "created_date": timestamp_to_8601(article.get("createDate", "")),
         "expiration_date": timestamp_to_8601(article.get("expirationDate", "")),
         "title": article.get("titleCurrentValue", ""),
