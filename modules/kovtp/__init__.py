@@ -13,3 +13,4 @@
 # limitations under the License.
 
 from .kovtp import Kovtp
+import queries

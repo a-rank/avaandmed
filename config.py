@@ -28,7 +28,7 @@ class Config(object):
     JSONWS_BUSSES_ARTICLE_ID = 8461475
 
     KOVTP_URL = "http://www.kuusalu.ee"
-    PAGE_SIZE = 10
+    PAGE_SIZE = 50
     HTML_PARSER = "lxml"
     DOCUMENTS_PATTERN = "(\.pdf)|(\.doc)|(\.docx)|(\.bdoc)|(\.odt)|(\.xls)|(\.ods)|(\.dwg)"
 

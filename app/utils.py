@@ -77,7 +77,7 @@ def add_schedule(schedule, element):
         timetable = []
         for time in times:
             hour, minute = re_sub("[,.]", ":", time).split(":")
-            timetable.append("{:02d}:{:1s}".format(int(hour), minute))
+            timetable.append("{:02d}:{:s}".format(int(hour), minute))
         schedule.append({"time": timetable, "name": name})
 
 
