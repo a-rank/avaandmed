@@ -37,8 +37,9 @@ class Kovtp:
             self.jsonws_password = jsonws_password
 
     def get_asset_entries(self, category_id, start, end):
-        return queries.get_asset_entries(self.jsonws_url, self.jsonws_username, self.jsonws_password, category_id,
-                                         start, end)
+        return queries.get_asset_entries_by_category(self.jsonws_url, self.jsonws_username, self.jsonws_password,
+                                                     category_id,
+                                                     start, end)
 
     def get_asset_entries_count(self, category_id):
         return queries.get_asset_entries_count(self.jsonws_url, self.jsonws_username, self.jsonws_password, category_id)

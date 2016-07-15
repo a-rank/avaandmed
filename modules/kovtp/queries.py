@@ -17,13 +17,42 @@ from requests.auth import HTTPBasicAuth
 
 
 #: com.liferay.portlet.asset.service.AssetEntryServiceUtil#getEntries
-def get_asset_entries(url, username, password, category_id, start, end):
+def get_asset_entries_by_category(url, username, password, category_id, start, end):
     parameters = "+entryQuery/entryQuery.allCategoryIds/{id}".format(id=category_id)
     paging = "entryQuery.start/{start}/entryQuery.end/{end}".format(start=start, end=end)
     url = "{base_url}/assetentry/get-entries/{parameters}/{paging}".format(base_url=url,
                                                                            parameters=parameters, paging=paging)
     response = requests.get(url, auth=HTTPBasicAuth(username, password))
     return response.json()
+
+
+#: com.liferay.portlet.asset.service.AssetEntryServiceUtil#getEntries
+def get_asset_entries_by_class(url, username, password, class_name, start, end):
+    parameters = "+entryQuery/entryQuery.allCategoryIds/{id}".format(id=class_name)
+    paging = "entryQuery.start/{start}/entryQuery.end/{end}".format(start=start, end=end)
+    url = "{base_url}/assetentry/get-entries/{parameters}/{paging}".format(base_url=url,
+                                                                           parameters=parameters, paging=paging)
+    response = requests.get(url, auth=HTTPBasicAuth(username, password))
+    return response.json()
+
+
+#: com.liferay.portlet.asset.service.AssetEntryServiceUtil#getEntries
+def get_linked_asset_entries(url, username, password, entry_id, start, end):
+    parameters = "+entryQuery/entryQuery.linkedAssetEntryId/{id}".format(id=entry_id)
+    paging = "entryQuery.start/{start}/entryQuery.end/{end}".format(start=start, end=end)
+    url = "{base_url}/assetentry/get-entries/{parameters}/{paging}".format(base_url=url,
+                                                                           parameters=parameters, paging=paging)
+    response = requests.get(url, auth=HTTPBasicAuth(username, password))
+    return response.json()
+
+
+#: com.liferay.portlet.asset.service.AssetEntryServiceUtil#getEntry
+def get_asset_entry(url, username, password, entry_id):
+    parameters = "+entryQuery/entryId//{id}/".format(id=entry_id)
+    url = "{base_url}/assetentry/get-entry/{parameters}".format(base_url=url,
+                                                                parameters=parameters)
+    response = requests.get(url, auth=HTTPBasicAuth(username, password))
+    return response.text()
 
 
 #: com.liferay.portlet.asset.service.AssetEntryServiceUtil#getEntriesCount
