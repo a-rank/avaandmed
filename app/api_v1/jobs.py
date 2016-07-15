@@ -15,7 +15,6 @@
 from flask import jsonify, current_app, url_for, request
 from . import api
 from .. import kovtp
-from ..utils import parse_article_or_404, timestamp_to_8601
 from ..utils import Pagination
 
 
@@ -24,18 +23,18 @@ def get_jobs():
     page = request.args.get("page", 1, type=int)
     category_id = current_app.config["JSONWS_JOBS_CATEGORY_ID"]
     pagination = Pagination("api.get_jobs", page)
-    assets = kovtp.get_asset_entries(category_id, pagination.start(), pagination.end())
+    assets = kovtp.get_assets(category_id, pagination.start(), pagination.end())
     jobs = []
     for asset in assets:
-        asset_id = asset.get("classPK", 0)
-        if asset_id:
+        article_id = asset.get_id()
+        if article_id:
             jobs.append({
-                "id": asset_id,
-                "url": url_for("api.get_job", id=asset_id, _external=True),
-                "created_date": timestamp_to_8601(asset.get("createDate", "")),
-                "expiration_date": timestamp_to_8601(asset.get("expirationDate", "")),
-                "modified_date": timestamp_to_8601(asset.get("modifiedDate", "")),
-                "title": asset.get("titleCurrentValue", "")
+                "id": article_id,
+                "url": url_for("api.get_job", id=article_id, _external=True),
+                "created_date": asset.get_create_date(),
+                "expiration_date": asset.get_expiration_date(),
+                "modified_date": asset.get_modified_date(),
+                "title": asset.get_title()
             })
     assets_count = len(assets)
     return jsonify({
@@ -51,18 +50,18 @@ def get_jobs():
 def get_job(id):
     result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)
-    text, images, links, documents = parse_article_or_404(article, result_type)
+    images, links, documents = article.get_links()
     return jsonify({
         "id": id,
         "url": url_for("api.get_job", id=id, _external=True),
-        "created_date": timestamp_to_8601(article.get("createDate", "")),
-        "expiration_date": timestamp_to_8601(article.get("expirationDate", "")),
-        "title": article.get("titleCurrentValue", ""),
+        "created_date": article.get_create_date(),
+        "expiration_date": article.get_expiration_date(),
+        "title": article.get_title(),
         "links": {
             "images": images,
             "documents": documents,
             "other": links
         },
-        "content": text,
-        "portal_url": article.get("urlTitle", "")
+        "content": article.get_content_as_plain_text(),
+        "portal_url": article.get_url_title()
     })

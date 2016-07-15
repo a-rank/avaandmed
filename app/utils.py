@@ -12,62 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from bs4 import BeautifulSoup, NavigableString, Tag
-from flask import abort
-from datetime import datetime, timedelta
-from flask import current_app, url_for
-from lxml import etree
-from re import compile as re_compile, sub as re_sub, findall as re_findall
+from re import sub as re_sub, findall as re_findall
 from unicodedata import normalize
-
-
-def get_cdata_from_content_or_404(content):
-    root = etree.fromstring(content)
-    contents = root.xpath("//static-content[@language-id='et_EE']")
-    cdata = next(iter(contents), None)
-    if cdata is None:
-        abort(404)
-    return re_sub("[\n\t]", "", cdata.text)
-
-
-def get_content_from_article_or_404(article):
-    if not "content" in article:
-        abort(404)
-    return article["content"]
-
-
-def parse_article_or_404(article, result_type="plain"):
-    text = None
-    images = []
-    links = []
-    documents = []
-
-    content = get_content_from_article_or_404(article)
-    cdata = get_cdata_from_content_or_404(content)
-    soup = BeautifulSoup(cdata, current_app.config["HTML_PARSER"])
-
-    image_tags = soup.find_all("img")
-    images = [{"url": tag["src"]} for tag in image_tags]
-
-    documents_pattern = re_compile(current_app.config["DOCUMENTS_PATTERN"])
-    link_tags = soup.find_all("a")
-    for tag in link_tags:
-        if tag["href"].startswith("/documents/"):
-            link_url = "".join([current_app.config["KOVTP_URL"], tag["href"]])
-        else:
-            link_url = tag["href"]
-        result_link = {"url": link_url, "title": tag.get_text(strip=True)}
-        if documents_pattern.search(link_url) is not None:
-            documents.append(result_link)
-        else:
-            links.append(result_link)
-
-    if result_type == "html":
-        text = cdata
-    else:
-        text = " ".join(soup.stripped_strings)
-
-    return (text, images, links, documents)
+from bs4 import BeautifulSoup, NavigableString, Tag
+from flask import current_app, url_for
 
 
 def add_schedule(schedule, element):
@@ -93,10 +41,8 @@ def traverse_schedule_tree(schedule, route, element):
     return route
 
 
-def parse_busses_article_or_404(article):
+def parse_busses_article(cdata):
     result = []
-    content = get_content_from_article_or_404(article)
-    cdata = get_cdata_from_content_or_404(content)
     soup = BeautifulSoup(cdata, current_app.config["HTML_PARSER"])
 
     paragraph_tags = soup.find_all("p")
@@ -112,15 +58,6 @@ def parse_busses_article_or_404(article):
             route = None
 
     return result
-
-
-def timestamp_to_8601(timestamp):
-    int_timestamp = int(timestamp if timestamp is not None else 0)
-    if int_timestamp:
-        date = datetime(1970, 1, 1) + timedelta(milliseconds=int_timestamp)
-        return date.isoformat()
-    else:
-        return ""
 
 
 class Pagination:

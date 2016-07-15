@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .kovtp import Kovtp
 import queries
+from .article import Article
+from .asset import Asset
+from .kovtp import Kovtp
+
