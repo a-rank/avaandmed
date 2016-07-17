@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+from urlparse import urlparse
 from utils import get_content_from_article, get_cdata_from_content
 from bs4 import BeautifulSoup
 from re import compile
@@ -22,7 +22,7 @@ from .utils import timestamp_to_8601
 class Article:
     document_extensions = "(\.pdf)|(\.doc)|(\.docx)|(\.bdoc)|(\.odt)|(\.xls)|(\.ods)|(\.dwg)"
 
-    def __init__(self, article, parser="lxml", document_extensions=None):
+    def __init__(self, article, base_url, parser="lxml", document_extensions=None):
         if not isinstance(article, dict):
             raise TypeError
         self.article = article
@@ -35,39 +35,9 @@ class Article:
             raise ValueError
 
         self.soup = BeautifulSoup(self.cdata, parser)
-
+        self.base_url = base_url
         if document_extensions is not None:
             self.document_extensions = document_extensions
-
-    def get_content_as_html(self):
-        return self.cdata
-
-    def get_content_as_plain_text(self):
-        return " ".join(self.soup.stripped_strings)
-
-    def get_links(self):
-        images = []
-        links = []
-        documents = []
-
-        image_tags = self.soup.find_all("img")
-        images = [{"url": tag["src"]} for tag in image_tags]
-
-        pattern = compile(self.document_extensions)
-        link_tags = self.soup.find_all("a")
-        for tag in link_tags:
-            if tag["href"].startswith("/documents/"):
-                url = "".join(["", tag["href"]])
-            else:
-                url = tag["href"]
-
-            result = {"url": url, "title": tag.get_text(strip=True)}
-            if pattern.search(url) is not None:
-                documents.append(result)
-            else:
-                links.append(result)
-
-        return (images, links, documents)
 
     def get_article_id(self):
         return self.article.get("articleId", 0)
@@ -107,3 +77,34 @@ class Article:
 
     def get_raw(self):
         return self.article
+
+    def get_content_as_html(self):
+        return self.cdata
+
+    def get_content_as_plain_text(self):
+        return " ".join(self.soup.stripped_strings)
+
+    def get_image_links(self):
+        image_tags = self.soup.find_all("img")
+        return [{"url": tag["src"]} for tag in image_tags]
+
+    def get_document_links(self):
+        links = []
+        documents = []
+
+        pattern = compile(self.document_extensions)
+        link_tags = self.soup.find_all("a")
+        for tag in link_tags:
+            result = urlparse(tag["href"])
+            if not result.netloc:
+                url = "".join([self.base_url, result.geturl()])
+            else:
+                url = result.geturl()
+
+            result = {"url": url, "title": tag.get_text(strip=True)}
+            if pattern.search(url) is not None:
+                documents.append(result)
+            else:
+                links.append(result)
+
+        return (links, documents)

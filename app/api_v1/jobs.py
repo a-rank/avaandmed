@@ -50,7 +50,7 @@ def get_jobs():
 def get_job(id):
     result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)
-    images, links, documents = article.get_links()
+    links, documents = article.get_document_links()
     return jsonify({
         "id": id,
         "url": url_for("api.get_job", id=id, _external=True),
@@ -58,7 +58,7 @@ def get_job(id):
         "expiration_date": article.get_expiration_date(),
         "title": article.get_title(),
         "links": {
-            "images": images,
+            "images": article.get_image_links(),
             "documents": documents,
             "other": links
         },
