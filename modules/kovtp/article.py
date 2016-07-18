@@ -22,7 +22,7 @@ from .utils import timestamp_to_8601
 class Article:
     document_extensions = "(\.pdf)|(\.doc)|(\.docx)|(\.bdoc)|(\.odt)|(\.xls)|(\.ods)|(\.dwg)"
 
-    def __init__(self, article, base_url, parser="lxml", document_extensions=None):
+    def __init__(self, article, base_url, html_parser, document_extensions=None):
         if not isinstance(article, dict):
             raise TypeError
         self.article = article
@@ -34,7 +34,7 @@ class Article:
         if self.cdata is None:
             raise ValueError
 
-        self.soup = BeautifulSoup(self.cdata, parser)
+        self.soup = BeautifulSoup(self.cdata, html_parser)
         self.base_url = base_url
         if document_extensions is not None:
             self.document_extensions = document_extensions
@@ -95,11 +95,14 @@ class Article:
         pattern = compile(self.document_extensions)
         link_tags = self.soup.find_all("a")
         for tag in link_tags:
-            result = urlparse(tag["href"])
-            if not result.netloc:
-                url = "".join([self.base_url, result.geturl()])
-            else:
-                url = result.geturl()
+            try:
+                result = urlparse(tag["href"])
+                if not result.netloc:
+                    url = "".join([self.base_url, result.geturl()])
+                else:
+                    url = result.geturl()
+            except AttributeError:
+                continue
 
             result = {"url": url, "title": tag.get_text(strip=True)}
             if pattern.search(url) is not None:

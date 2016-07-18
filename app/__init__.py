@@ -27,6 +27,7 @@ def create_app(config):
     kovtp.jsonws_url = app.config["JSONWS_URL"]
     kovtp.jsonws_username = app.config["JSONWS_USERNAME"]
     kovtp.jsonws_password = app.config["JSONWS_PASSWORD"]
+    kovtp.html_parser = app.config["HTML_PARSER"]
 
     from api_v1 import api as api_v1_blueprint
     app.register_blueprint(api_v1_blueprint, url_prefix='/v1')
