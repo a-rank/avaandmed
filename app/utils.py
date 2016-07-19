@@ -60,7 +60,7 @@ def parse_busses_article(cdata):
     return result
 
 
-class Pagination:
+class Pagination(object):
     def __init__(self, base, page):
         self.base = base
         self.page = page

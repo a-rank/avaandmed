@@ -104,6 +104,6 @@ def get_file_entry(url, username, password, file_entry_id):
 
 #: com.liferay.portal.service.PortalServiceUtil#getBuildNumber
 def get_build_number(url, username, password, ):
-    url = "{base_url}/portal/get-build-number"
+    url = "{_base_url}/portal/get-build-number"
     response = requests.get(url, auth=HTTPBasicAuth(username, password))
     return response.text()

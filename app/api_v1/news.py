@@ -49,7 +49,7 @@ def get_all_news():
 def get_news(id):
     result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)
-    images, links, documents = article.get_links()
+    links, documents = article.get_document_links()
     return jsonify({
         "id": id,
         "created_date": article.get_create_date(),
@@ -57,7 +57,7 @@ def get_news(id):
         "title": article.get_title(),
         "url": url_for('api.get_news', id=id, _external=True),
         "links": {
-            "images": images,
+            "images": article.get_image_links(),
             "documents": documents,
             "other": links
         },
