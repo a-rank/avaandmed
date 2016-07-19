@@ -39,3 +39,16 @@ def get_content_from_article(article):
     if "content" in article:
         return article["content"]
     return None
+
+
+def kovtp_property(property_name):
+    def property_getter(instance):
+        return instance.__dict__[property_name]
+
+    def property_setter(instance, value):
+        if value is not None:
+            instance.__dict__[property_name] = value
+        else:
+            raise ValueError
+
+    return property(property_getter, property_setter)
