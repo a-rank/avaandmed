@@ -27,13 +27,15 @@ class Config(object):
     JSONWS_COMPANY_ID = 7610243
     JSONWS_BUSSES_ARTICLE_ID = 8461475
 
-    PAGE_SIZE = 50
+    PORTAL_URL = "https://www.kuusalu.ee"
     HTML_PARSER = "lxml"
 
 
 class ProdConfig(Config):
     DEBUG = False
+    PAGE_SIZE = 50
 
 
 class DevConfig(Config):
     DEBUG = True
+    PAGE_SIZE = 10

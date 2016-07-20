@@ -46,9 +46,9 @@ def kovtp_property(property_name):
         return instance.__dict__[property_name]
 
     def property_setter(instance, value):
-        if value is not None:
-            instance.__dict__[property_name] = value
-        else:
+        if not value:
             raise ValueError
+        else:
+            instance.__dict__[property_name] = value
 
     return property(property_getter, property_setter)
