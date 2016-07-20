@@ -60,7 +60,7 @@ class Article:
     def get_group_id(self):
         return self.article.get("groupId", 0)
 
-    def get_resource_key(self):
+    def get_primary_key(self):
         return self.article.get("resourcePrimKey", "")
 
     def get_title(self):

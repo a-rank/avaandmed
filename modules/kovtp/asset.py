@@ -21,7 +21,7 @@ class Asset:
             raise TypeError
         self.asset = asset
 
-    def get_id(self):
+    def get_primary_key(self):
         return self.asset.get("classPK", 0)
 
     def get_class_uuid(self):
@@ -30,7 +30,7 @@ class Asset:
     def get_description(self):
         return self.asset.get("description", "")
 
-    def get_asset_entry_id(self):
+    def get_entry_id(self):
         return self.asset.get("entryId", 0)
 
     def get_create_date(self):

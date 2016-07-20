@@ -48,7 +48,6 @@ class Kovtp(object):
                                       article_id)
         return Article(article, self.portal_url, self.html_parser)
 
-    def get_latest_article(self, resource_prim_key):
-        article = queries.get_latest_article(self.jsonws_url, self.jsonws_username, self.jsonws_password,
-                                             resource_prim_key)
+    def get_latest_article(self, primary_key):
+        article = queries.get_latest_article(self.jsonws_url, self.jsonws_username, self.jsonws_password, primary_key)
         return Article(article, self.portal_url, self.html_parser)

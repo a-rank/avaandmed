@@ -60,6 +60,13 @@ def parse_busses_article(cdata):
     return result
 
 
+def get_article_content_by_type(article, result_type):
+    if result_type == "html":
+        return article.get_content_as_html()
+    else:
+        return article.get_content_as_plain_text()
+
+
 class Pagination(object):
     def __init__(self, base, page):
         self.base = base

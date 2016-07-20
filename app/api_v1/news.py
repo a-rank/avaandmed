@@ -15,7 +15,7 @@
 from flask import jsonify, current_app, url_for, request
 from . import api
 from .. import kovtp
-from ..utils import Pagination
+from ..utils import Pagination, get_article_content_by_type
 
 
 @api.route("/news/")
@@ -26,11 +26,11 @@ def get_all_news():
     assets = kovtp.get_assets(category_id, pagination.start(), pagination.end())
     news = []
     for asset in assets:
-        article_id = asset.get_id()
-        if article_id:
+        article_primary_key = asset.get_primary_key()
+        if article_primary_key:
             news.append({
-                "id": article_id,
-                "url": url_for("api.get_news", id=article_id, _external=True),
+                "id": article_primary_key,
+                "url": url_for("api.get_news", id=article_primary_key, _external=True),
                 "created_date": asset.get_create_date(),
                 "modified_date": asset.get_modified_date(),
                 "title": asset.get_title()
@@ -61,6 +61,6 @@ def get_news(id):
             "documents": documents,
             "other": links
         },
-        "content": article.get_content_as_plain_text(),
+        "content": get_article_content_by_type(article, result_type),
         "portal_url": article.get_url_title()
     })
