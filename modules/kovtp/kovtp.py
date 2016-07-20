@@ -19,11 +19,11 @@ from .utils import kovtp_property
 
 
 class Kovtp(object):
-    jsonws_username = kovtp_property("jsonws_username")
-    jsonws_password = kovtp_property("jsonws_password")
-    html_parser = kovtp_property("html_parser")
-    portal_url = kovtp_property("portal_url")
-    jsonws_url = kovtp_property("jsonws_url")
+    jsonws_username = kovtp_property("_jsonws_username")
+    jsonws_password = kovtp_property("_jsonws_password")
+    html_parser = kovtp_property("_html_parser")
+    portal_url = kovtp_property("_portal_url")
+    jsonws_url = kovtp_property("_jsonws_url")
 
     def __init__(self, jsonws_url=None, portal_url=None, jsonws_username=None,
                  jsonws_password=None, html_parser=None):
