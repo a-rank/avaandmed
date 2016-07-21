@@ -18,26 +18,26 @@ from .. import kovtp
 from ..utils import Pagination, get_article_content_by_type
 
 
-@api.route("/news/")
-def get_all_news():
+@api.route("/plannings/")
+def get_plannings():
     page = request.args.get("page", 1, type=int)
-    category_id = current_app.config["JSONWS_NEWS_CATEGORY_ID"]
-    pagination = Pagination("api.get_all_news", page)
+    category_id = current_app.config["JSONWS_PLANNINGS_CATEGORY_ID"]
+    pagination = Pagination("api.get_plannings", page)
     assets = kovtp.get_assets(category_id, pagination.start(), pagination.end())
-    news = []
+    plannings = []
     for asset in assets:
         article_primary_key = asset.get_primary_key()
         if article_primary_key:
-            news.append({
+            plannings.append({
                 "id": article_primary_key,
-                "url": url_for("api.get_news", id=article_primary_key, _external=True),
+                "url": url_for("api.get_planning", id=article_primary_key, _external=True),
                 "created_date": asset.get_create_date(),
                 "modified_date": asset.get_modified_date(),
                 "title": asset.get_title()
             })
     assets_count = len(assets)
     return jsonify({
-        "news": news,
+        "plannings": plannings,
         "meta": {
             "count": assets_count,
             "next_page": pagination.next_url(assets_count),
@@ -45,8 +45,8 @@ def get_all_news():
     })
 
 
-@api.route("/news/<int:id>")
-def get_news(id):
+@api.route("/planning/<int:id>")
+def get_planning(id):
     result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)
     links, documents = article.get_document_links()
@@ -55,7 +55,7 @@ def get_news(id):
         "created_date": article.get_create_date(),
         "modified_date": article.get_modified_date(),
         "title": article.get_title(),
-        "url": url_for("api.get_news", id=id, _external=True),
+        "url": url_for("api.get_planning", id=id, _external=True),
         "links": {
             "images": article.get_image_links(),
             "documents": documents,

@@ -50,5 +50,5 @@ def kovtp_property(property_name):
             raise ValueError
         else:
             setattr(instance, property_name, value)
-            
+
     return property(property_getter, property_setter)
