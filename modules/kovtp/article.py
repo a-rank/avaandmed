@@ -97,7 +97,7 @@ class Article:
         for tag in link_tags:
             try:
                 result = urlparse(tag["href"])
-                if not result.netloc:
+                if not result.scheme:
                     url = "".join([self.base_url, result.geturl()])
                 else:
                     url = result.geturl()
