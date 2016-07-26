@@ -19,7 +19,8 @@ from flask_script import Manager, Server
 from config import DevConfig, ProdConfig
 
 app = create_app(DevConfig)
-manager = Manager(app)
+manager = Manager(app=app, with_default_commands=False)
+manager.add_command("server", Server())
 
 
 @manager.shell
@@ -29,11 +30,10 @@ def make_shell_context():
     )
 
 
-@manager.option("-s", "--script", dest="path", default=None)
 @manager.command
-def env(path):
-    "Sets enviroment variables needed for running"
-    print path
+def fetch():
+    "Import documents from amphora"
+    pass
 
 
 if __name__ == '__main__':
