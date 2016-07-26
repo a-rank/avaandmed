@@ -15,7 +15,7 @@
 from lxml import etree
 from datetime import datetime, timedelta
 from re import sub as re_sub
-from uuid import uuid1
+from uuid import uuid4
 
 
 def timestamp_to_8601(timestamp):
@@ -43,7 +43,7 @@ def get_content_from_article(article):
 
 
 def kovtp_property():
-    property_name = "{}:{}".format("kovtp", uuid1())
+    property_name = "{}:{}".format("kovtp", uuid4())
 
     def property_getter(instance):
         return getattr(instance, property_name)
