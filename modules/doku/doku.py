@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+from .utils import doku_property
 
-sys.path.insert(0, os.path.abspath('..'))
-from modules.kovtp import Kovtp
-from modules.doku import Doku
+
+class Doku(object):
+    amphora_api_url = doku_property()
+
+    def __init__(self, amphora_api_url=None):
+        if amphora_api_url is not None:
+            self.amphora_api_url = amphora_api_url

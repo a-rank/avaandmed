@@ -12,9 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+from uuid import uuid4
 
-sys.path.insert(0, os.path.abspath('..'))
-from modules.kovtp import Kovtp
-from modules.doku import Doku
+
+def doku_property():
+    property_name = "{}:{}".format("doku", uuid4())
+
+    def property_getter(instance):
+        return getattr(instance, property_name)
+
+    def property_setter(instance, value):
+        if not value:
+            raise ValueError
+        else:
+            setattr(instance, property_name, value)
+
+    return property(property_getter, property_setter)

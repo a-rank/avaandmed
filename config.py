@@ -17,6 +17,7 @@ import os
 
 class Config(object):
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+    TEMP_DIR = os.path.join(BASE_DIR, "temp")
 
     JSONWS_URL = "https://www.kuusalu.ee/api/secure/jsonws"
     JSONWS_USERNAME = os.environ.get("JSONWS_USERNAME")
@@ -30,6 +31,9 @@ class Config(object):
 
     PORTAL_URL = "https://www.kuusalu.ee"
     HTML_PARSER = "lxml"
+
+    AMPHORA_TOPICS = [5059, 50285, 50286, 50287, 50288, 50344]
+    AMPHORA_API_URL = "http://atp.amphora.ee/kuusaluvv/api/act"
 
 
 class ProdConfig(Config):
