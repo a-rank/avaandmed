@@ -32,7 +32,7 @@ def make_shell_context():
 @manager.option("-s", "--script", dest="path", default=None)
 @manager.command
 def env(path):
-    "Sets enviroment variables needed for running doku"
+    "Sets enviroment variables needed for running"
     print path
 
 
