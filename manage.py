@@ -19,29 +19,23 @@ from app.context import Doku
 from flask_script import Manager, Server
 from flask_script.commands import ShowUrls, Clean
 from config import DevConfig, ProdConfig
+from database import manager as db_manager
 
 app = create_app(DevConfig)
-doku = Doku()
 manager = Manager(app=app, with_default_commands=False)
 
 manager.add_command("server", Server())
 manager.add_command("urls", ShowUrls())
 manager.add_command("clean", Clean())
+manager.add_command("database", db_manager)
 
 
 @manager.shell
 def make_shell_context():
     return dict(
         app=app,
-        kovtp=kovtp,
-        doku=doku
+        kovtp=kovtp
     )
-
-
-@manager.command
-def fetch():
-    "Import documents from amphora"
-    pass
 
 
 if __name__ == '__main__':
