@@ -15,7 +15,6 @@
 # limitations under the License.
 
 from app import create_app, kovtp
-from app.context import Doku
 from flask_script import Manager, Server
 from flask_script.commands import ShowUrls, Clean
 from config import DevConfig, ProdConfig

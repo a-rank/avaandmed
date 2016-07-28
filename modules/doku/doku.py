@@ -12,12 +12,63 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .utils import doku_property
+import requests
+import os
+import ijson
+
+
+class DownloadError(Exception):
+    def __init__(self, response_code, file_url):
+        Exception.__init__(self)
+        self.response_code = response_code
+        self.file_url = file_url
 
 
 class Doku(object):
-    amphora_api_url = doku_property()
+    def __init__(self, amphora_location, temp_dir):
+        if not amphora_location:
+            raise ValueError
+        else:
+            self.amphora_url = "http://atp.amphora.ee/{location}".format(location=amphora_location)
+            self.amphora_api_url = "{amphora_url}/api/act".format(amphora_url=self.amphora_url)
 
-    def __init__(self, amphora_api_url=None):
-        if amphora_api_url is not None:
-            self.amphora_api_url = amphora_api_url
+        if not temp_dir:
+            raise ValueError
+        else:
+            self.temp_dir = temp_dir
+
+    def download_file(self, file_url, output_path, block_size=1024, timeout=20):
+        response = requests.get(file_url, stream=True, timeout=timeout)
+        if response.ok:
+            with open(output_path, "w") as downloaded_file:
+                for block in response.iter_content(block_size):
+                    downloaded_file.write(block)
+            return response.headers.get("content-length", 0)
+        else:
+            raise DownloadError(response.status_code, file_url)
+
+    def download_file_list(self, topic_ids):
+        output_path = os.path.join(self.temp_dir, "act.json")
+        files = []
+        item_id = 0
+        item_file_id = 0
+        topic_id = 0
+        with open(output_path, "r") as json:
+            parser = ijson.parse(json)
+            for prefix, event, value in parser:
+                if (prefix, event) == ("Acts.item.topic_id", "number"):
+                    topic_id = value
+                elif (prefix, event) == ("Acts.item.item_id", "number"):
+                    item_id = value
+                elif (prefix, event) == ("Acts.item.item_file_id", "number"):
+                    item_file_id = value
+                elif (prefix, event) == ("Acts.item", "end_map"):
+                    if topic_id in topic_ids and item_id and item_file_id:
+                        files.append(
+                            (item_id,
+                             "{amphora_url}/?itm={item_id}&af={item_file_id}".format(
+                                 amphora_url=self.amphora_url, item_id=item_id, item_file_id=item_file_id)))
+                    item_id = 0
+                    item_file_id = 0
+                    topic_id = 0
+        return files

@@ -15,6 +15,8 @@
 # limitations under the License.
 
 from flask_script import Manager
+from app.context import Doku
+from pprint import pprint
 
 manager = Manager(usage="Perform database operations", description="")
 
@@ -23,4 +25,7 @@ manager = Manager(usage="Perform database operations", description="")
 def fetch():
     "Import documents from amphora"
     app = manager.parent.app
-    print vars(app)
+    doku = Doku(amphora_location=app.config["AMPHORA_LOCATION"], temp_dir=app.config["TEMP_DIR"])
+    files = doku.download_file_list(app.config["AMPHORA_TOPICS"])
+    pprint(files)
+    print len(files)

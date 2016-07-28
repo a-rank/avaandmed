@@ -33,7 +33,7 @@ class Config(object):
     HTML_PARSER = "lxml"
 
     AMPHORA_TOPICS = [5059, 50285, 50286, 50287, 50288, 50344]
-    AMPHORA_API_URL = "http://atp.amphora.ee/kuusaluvv/api/act"
+    AMPHORA_LOCATION = "kuusaluvv"
 
 
 class ProdConfig(Config):
