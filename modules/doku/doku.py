@@ -13,8 +13,10 @@
 # limitations under the License.
 
 import requests
-import os
-import ijson
+from os import path as os_path
+from ijson import parse as ijson_parse
+from collections import defaultdict
+from operator import setitem
 
 
 class DownloadError(Exception):
@@ -47,28 +49,32 @@ class Doku(object):
         else:
             raise DownloadError(response.status_code, file_url)
 
-    def download_file_list(self, topic_ids):
-        output_path = os.path.join(self.temp_dir, "act.json")
+    def create_file_url(self, item_id, item_file_id):
+        return "{amphora_url}/?itm={itm}&af={af}".format(amphora_url=self.amphora_url,
+                                                         itm=item_id, af=item_file_id)
+
+    def download_file_list(self, filter_topic_ids):
+        output_path = os_path.join(self.temp_dir, "act.json")
+        self.download_file(self.amphora_api_url, output_path)
+
         files = []
-        item_id = 0
-        item_file_id = 0
-        topic_id = 0
+        ids = defaultdict(int)
+        setters = {
+            "Acts.item.topic_id.number": lambda ids, value: setitem(ids, "topic_id", value),
+            "Acts.item.item_id.number": lambda ids, value: setitem(ids, "item_id", value),
+            "Acts.item.item_file_id.number": lambda ids, value: setitem(ids, "item_file_id", value),
+            "Acts.item.end_map": lambda ids, value: ids.clear()
+        }
+
         with open(output_path, "r") as json:
-            parser = ijson.parse(json)
+            parser = ijson_parse(json)
             for prefix, event, value in parser:
-                if (prefix, event) == ("Acts.item.topic_id", "number"):
-                    topic_id = value
-                elif (prefix, event) == ("Acts.item.item_id", "number"):
-                    item_id = value
-                elif (prefix, event) == ("Acts.item.item_file_id", "number"):
-                    item_file_id = value
-                elif (prefix, event) == ("Acts.item", "end_map"):
-                    if topic_id in topic_ids and item_id and item_file_id:
-                        files.append(
-                            (item_id,
-                             "{amphora_url}/?itm={item_id}&af={item_file_id}".format(
-                                 amphora_url=self.amphora_url, item_id=item_id, item_file_id=item_file_id)))
-                    item_id = 0
-                    item_file_id = 0
-                    topic_id = 0
+                if (prefix, event) == ("Acts.item", "end_map"):
+                    if ids["topic_id"] in filter_topic_ids and ids["item_id"] and ids["item_file_id"]:
+                        files.append((ids["item_id"], self.create_file_url(ids["item_id"], ids["item_file_id"])))
+
+                setter = setters.get("".join([prefix, ".", event]))
+                if setter:
+                    setter(ids, value)
+
         return files
