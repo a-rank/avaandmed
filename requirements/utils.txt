@@ -1,0 +1,6 @@
+pdftotext
+antiword
+docx2txt
+unrtf
+odt2txt
+html2text
