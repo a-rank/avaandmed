@@ -20,7 +20,7 @@ from .utils import timestamp_to_8601
 
 
 class Article:
-    document_extensions = "(\.pdf)|(\.doc)|(\.docx)|(\.bdoc)|(\.odt)|(\.xls)|(\.ods)|(\.dwg)"
+    document_extensions = "(\.pdf)|(\.doc)|(\.docx)|(\.bdoc)|(\.odt)|(\.xls)|(\.ods)|(\.dwg)|(\.rtf)"
 
     def __init__(self, article, base_url, html_parser, document_extensions=None):
         if not isinstance(article, dict):
