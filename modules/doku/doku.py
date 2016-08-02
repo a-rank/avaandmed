@@ -50,7 +50,11 @@ class Doku(object):
     def extract_document_text(self, filename, out_filename=None):
         if not out_filename:
             out_filename = "".join([filename, ".txt"])
-        text = fulltext.get(filename)
+        _, extension = os_path.splitext(filename)
+        type = None
+        if not extension in {".doc", ".docx", ".rtf", ".pdf", ".odt"}:
+            type = ("application/msword", None)
+        text = fulltext.get(filename, type=type)
         with open(out_filename, "w") as f:
             f.write(text)
         return out_filename
@@ -62,9 +66,8 @@ class Doku(object):
             if extension_from_header:
                 _, params = parse_header(response.headers.get("content-disposition", ""))
                 _, extension = os_path.splitext(params.get("filename", ""))
-                if not extension:
-                    extension = ".doc"
-                out_filename = "".join([out_filename, extension])
+                if extension:
+                    out_filename = "".join([out_filename, extension])
             with open(out_filename, "w") as f:
                 for block in response.iter_content(block_size):
                     f.write(block)
@@ -102,13 +105,11 @@ class Doku(object):
                     setter(attributes, value)
         return files
 
-    def download_documents(self, topic_filter, id_stop_at=None,
-                           delay=None, extract_text=False, callback=None):
+    def download_documents(self, topic_filter, id_stop_at=None, delay=None,
+                           extract_text=False, callback=None):
         downloaded_files = {}
         documents = self.download_documents_list(topic_filter)
         if len(documents):
-            id_start_at = documents.keys()[0]
-
             if id_stop_at:
                 stop_at = documents.keys().index(id_stop_at)
                 documents = OrderedDict(islice(documents.items(), 0, stop_at))
@@ -119,8 +120,7 @@ class Doku(object):
                 filename = os_path.join(self.temp_dir, str(item_id))
 
                 downloaded_file = self.download_file(url, filename, extension_from_header=True)
-                downloaded_files[item_id] = {"file": downloaded_file,
-                                             "data": data}
+                downloaded_files[item_id] = {"file": downloaded_file, "data": data}
 
                 if extract_text:
                     downloaded_files[item_id]["text"] = self.extract_document_text(downloaded_file)
