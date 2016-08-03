@@ -12,9 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import queries
+class DownloadError(Exception):
+    def __init__(self, response_code, file_url):
+        Exception.__init__(self)
+        self.response_code = response_code
+        self.file_url = file_url
 
-from .article import Article
-from .asset import Asset
-from .kovtp import Kovtp
 
+class ImportError(Exception):
+    def __init__(self, item_id):
+        Exception.__init__(self)
+        self.item_id = item_id

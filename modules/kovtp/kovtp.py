@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import queries
+
 from .article import Article
 from .asset import Asset
 from .utils import kovtp_property

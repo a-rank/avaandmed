@@ -14,6 +14,8 @@
 
 import requests
 import fulltext
+
+from requests.exceptions import ReadTimeout
 from os import path as os_path
 from ijson import parse as ijson_parse
 from collections import defaultdict, OrderedDict
@@ -21,13 +23,7 @@ from operator import setitem
 from time import sleep
 from cgi import parse_header
 from itertools import islice
-
-
-class DownloadError(Exception):
-    def __init__(self, response_code, file_url):
-        Exception.__init__(self)
-        self.response_code = response_code
-        self.file_url = file_url
+from .exceptions import DownloadError, ImportError
 
 
 class Doku(object):
@@ -106,7 +102,7 @@ class Doku(object):
         return files
 
     def download_documents(self, topic_filter, id_stop_at=None, delay=None,
-                           extract_text=False, callback=None):
+                           extract_text=False, callback=None, retries=3):
         downloaded_files = {}
         documents = self.download_documents_list(topic_filter)
         if len(documents):
@@ -114,12 +110,23 @@ class Doku(object):
                 stop_at = documents.keys().index(id_stop_at)
                 documents = OrderedDict(islice(documents.items(), 0, stop_at))
 
+            retry_delay = 1
             for item_id, data in documents.items():
                 file_id, _, _, _ = data
                 url = self.create_document_url(item_id, file_id)
                 filename = os_path.join(self.temp_dir, str(item_id))
 
-                downloaded_file = self.download_file(url, filename, extension_from_header=True)
+                for i in range(retries):
+                    try:
+                        downloaded_file = self.download_file(url, filename, extension_from_header=True)
+                    except ReadTimeout:
+                        sleep(retry_delay * i)
+                        continue
+                    else:
+                        break
+                else:
+                    raise ImportError(item_id)
+
                 downloaded_files[item_id] = {"file": downloaded_file, "data": data}
 
                 if extract_text:

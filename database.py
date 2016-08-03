@@ -16,15 +16,12 @@
 
 from flask_script import Manager
 from app.context import Doku
-from pprint import pprint
-from itertools import islice, takewhile
 
 manager = Manager(usage="Perform database operations", description="")
 
 
 def downloaded_callback(id, files):
     print id
-    pprint(files)
 
 
 @manager.command
@@ -34,6 +31,7 @@ def fetch():
     doku = Doku(amphora_location=app.config["AMPHORA_LOCATION"],
                 temp_dir=app.config["TEMP_DIR"])
 
-    downloaded = doku.download_documents(topic_filter=app.config["AMPHORA_TOPICS"], id_stop_at=269660,
-                                         delay=1, extract_text=True, callback=downloaded_callback)
+    # 269660
+    downloaded = doku.download_documents(id_stop_at=269660, topic_filter=app.config["AMPHORA_TOPICS"],
+                                         delay=5, extract_text=True, callback=downloaded_callback)
     print len(downloaded)
