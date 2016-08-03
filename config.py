@@ -35,12 +35,21 @@ class Config(object):
     AMPHORA_TOPICS = [5059, 50285, 50286, 50287, 50288, 50344]
     AMPHORA_LOCATION = "kuusaluvv"
 
+    MYSQL_USER = os.environ.get("MYSQL_USER")
+    MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD")
+
 
 class ProdConfig(Config):
     DEBUG = False
     PAGE_SIZE = 50
 
+    MYSQL_DB = "avaandmed"
+    MYSQL_DATABASE_HOST = "localhost"
+
 
 class DevConfig(Config):
     DEBUG = True
     PAGE_SIZE = 10
+
+    MYSQL_DB = "avaandmed"
+    MYSQL_HOST = "localhost"

@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from app import create_app, kovtp
+from app import create_app, kovtp, db
 from flask_script import Manager, Server
 from flask_script.commands import ShowUrls, Clean
 from config import DevConfig, ProdConfig
@@ -33,7 +33,8 @@ manager.add_command("database", db_manager)
 def make_shell_context():
     return dict(
         app=app,
-        kovtp=kovtp
+        kovtp=kovtp,
+        db=db
     )
 
 

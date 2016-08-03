@@ -1,2 +1,4 @@
 export JSONWS_USERNAME=""
 export JSONWS_PASSWORD="" 
+export MYSQL_USER=""
+export MYSQL_PASSWORD=""

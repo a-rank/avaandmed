@@ -101,8 +101,8 @@ class Doku(object):
                     setter(attributes, value)
         return files
 
-    def download_documents(self, topic_filter, id_stop_at=None, delay=None,
-                           extract_text=False, callback=None, retries=3):
+    def download_documents(self, topic_filter, id_stop_at=None,
+                           delay=None, extract_text=False, callback=None, retries=3):
         downloaded_files = {}
         documents = self.download_documents_list(topic_filter)
         if len(documents):
@@ -118,7 +118,8 @@ class Doku(object):
 
                 for i in range(retries):
                     try:
-                        downloaded_file = self.download_file(url, filename, extension_from_header=True)
+                        downloaded_file = self.download_file(url, filename,
+                                                             extension_from_header=True)
                     except ReadTimeout:
                         sleep(retry_delay * i)
                         continue

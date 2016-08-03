@@ -14,8 +14,10 @@
 
 from flask import Flask
 from .context import Kovtp
+from .context import MySQLConnector
 
 kovtp = Kovtp()
+db = MySQLConnector()
 
 
 def create_app(config):
@@ -23,6 +25,8 @@ def create_app(config):
 
     app.config.from_object(config)
     app.url_map.strict_slashes = False
+
+    db.init_app(app)
 
     kovtp.jsonws_url = app.config["JSONWS_URL"]
     kovtp.jsonws_username = app.config["JSONWS_USERNAME"]
