@@ -42,7 +42,7 @@ class MySQLConnector(object):
         app.config.setdefault("MYSQL_RAW", False)
         app.config.setdefault("MYSQL_CONSUME_RESULTS", False)
 
-        if hasattr(app, 'teardown_appcontext'):
+        if hasattr(app, "teardown_appcontext"):
             app.teardown_appcontext(self.teardown)
         else:
             app.teardown_request(self.teardown)
@@ -51,34 +51,49 @@ class MySQLConnector(object):
         arguments = {}
         if current_app.config["MYSQL_HOST"]:
             arguments["host"] = current_app.config["MYSQL_HOST"]
+
         if current_app.config["MYSQL_USER"]:
             arguments["user"] = current_app.config["MYSQL_USER"]
+
         if current_app.config["MYSQL_PASSWORD"]:
             arguments["password"] = current_app.config["MYSQL_PASSWORD"]
+
         if current_app.config["MYSQL_DB"]:
             arguments["database"] = current_app.config["MYSQL_DB"]
+
         if current_app.config["MYSQL_PORT"]:
             arguments["port"] = current_app.config["MYSQL_PORT"]
+
         if current_app.config["MYSQL_UNIX_SOCKET"]:
             arguments["unix_socket"] = current_app.config["MYSQL_UNIX_SOCKET"]
+
         if current_app.config["MYSQL_USE_UNICODE"]:
             arguments["use_unicode"] = current_app.config["MYSQL_USE_UNICODE"]
+
         if current_app.config["MYSQL_CHARSET"]:
             arguments["charset"] = current_app.config["MYSQL_CHARSET"]
+
         if current_app.config["MYSQL_AUTOCOMMIT"]:
             arguments["autocommit"] = current_app.config["MYSQL_AUTOCOMMIT"]
+
         if current_app.config["MYSQL_TIME_ZONE"]:
             arguments["time_zone"] = current_app.config["MYSQL_TIME_ZONE"]
+
         if current_app.config["MYSQL_SQL_MODE"]:
             arguments["sql_mode"] = current_app.config["MYSQL_SQL_MODE"]
+
         if current_app.config["MYSQL_CONNECTION_TIMEOUT"]:
             arguments["connection_timeout"] = current_app.config["MYSQL_CONNECTION_TIMEOUT"]
+
         if current_app.config["MYSQL_CLIENT_FLAGS"]:
             arguments["client_flags"] = current_app.config["MYSQL_CLIENT_FLAGS"]
+
         if current_app.config["MYSQL_BUFFERED"]:
             arguments["buffered"] = current_app.config["MYSQL_BUFFERED"]
+
         if current_app.config["MYSQL_RAW"]:
             arguments["raw"] = current_app.config["MYSQL_RAW"]
+
         if current_app.config["MYSQL_CONSUME_RESULTS"]:
             arguments["consume_results"] = current_app.config["MYSQL_CONSUME_RESULTS"]
 
