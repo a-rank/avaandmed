@@ -43,6 +43,14 @@ def fetch():
 
 
 @manager.command
+def test():
+    "Initiate a test connection to database"
+    app = manager.parent.app
+    with app.app_context():
+        connection = db.connection
+
+
+@manager.command
 def create():
     "Create database"
     tables = {}

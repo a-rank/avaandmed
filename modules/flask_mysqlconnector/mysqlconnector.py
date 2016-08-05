@@ -41,6 +41,26 @@ class MySQLConnector(object):
         app.config.setdefault("MYSQL_BUFFERED", False)
         app.config.setdefault("MYSQL_RAW", False)
         app.config.setdefault("MYSQL_CONSUME_RESULTS", False)
+        app.config.setdefault("MYSQL_AUTH_PLUGIN", None)
+        app.config.setdefault("MYSQL_COLLATION", "utf8_general_ci")
+        app.config.setdefault("MYSQL_GET_WARNINGS", False)
+        app.config.setdefault("MYSQL_RAISE_ON_WARNINGS", False)
+        app.config.setdefault("MYSQL_SSL_CA", None)
+        app.config.setdefault("MYSQL_SSL_CERT", None)
+        app.config.setdefault("MYSQL_SSL_KEY", None)
+        app.config.setdefault("MYSQL_SSL_VERIFY_CERT", False)
+        app.config.setdefault("MYSQL_FORCE_IPV6", False)
+        app.config.setdefault("MYSQL_POOL_NAME", None)
+        app.config.setdefault("MYSQL_POOL_SIZE", 5)
+        app.config.setdefault("MYSQL_POOL_RESET_SESSION", True)
+        app.config.setdefault("MYSQL_COMPRESS", False)
+        app.config.setdefault("MYSQL_CONVERTER_CLASS", None)
+        app.config.setdefault("MYSQL_FABRIC", None)
+        app.config.setdefault("MYSQL_FAILOVER", None)
+        app.config.setdefault("MYSQL_OPTION_FILES", None)
+        app.config.setdefault("MYSQL_OPTION_GROUPS", None)
+        app.config.setdefault("MYSQL_ALLOW_LOCAL_INFILE", True)
+        app.config.setdefault("MYSQL_USE_PURE", False)
 
         if hasattr(app, "teardown_appcontext"):
             app.teardown_appcontext(self.teardown)
@@ -96,6 +116,66 @@ class MySQLConnector(object):
 
         if current_app.config["MYSQL_CONSUME_RESULTS"]:
             arguments["consume_results"] = current_app.config["MYSQL_CONSUME_RESULTS"]
+
+        if current_app.config["MYSQL_AUTH_PLUGIN"]:
+            arguments["auth_plugin"] = current_app.config["MYSQL_AUTH_PLUGIN"]
+
+        if current_app.config["MYSQL_COLLATION"]:
+            arguments["collation"] = current_app.config["MYSQL_COLLATION"]
+
+        if current_app.config["MYSQL_GET_WARNINGS"]:
+            arguments["get_warnings"] = current_app.config["MYSQL_GET_WARNINGS"]
+
+        if current_app.config["MYSQL_RAISE_ON_WARNINGS"]:
+            arguments["raise_on_warnings"] = current_app.config["MYSQL_RAISE_ON_WARNINGS"]
+
+        if current_app.config["MYSQL_SSL_CA"]:
+            arguments["ssl_ca"] = current_app.config["MYSQL_SSL_CA"]
+
+        if current_app.config["MYSQL_SSL_CERT"]:
+            arguments["ssl_cert"] = current_app.config["MYSQL_SSL_CERT"]
+
+        if current_app.config["MYSQL_SSL_KEY"]:
+            arguments["ssl_key"] = current_app.config["MYSQL_SSL_KEY"]
+
+        if current_app.config["MYSQL_SSL_VERIFY_CERT"]:
+            arguments["ssl_verify_cert"] = current_app.config["MYSQL_SSL_VERIFY_CERT"]
+
+        if current_app.config["MYSQL_FORCE_IPV6"]:
+            arguments["force_ipv6"] = current_app.config["MYSQL_FORCE_IPV6"]
+
+        if current_app.config["MYSQL_POOL_NAME"]:
+            arguments["pool_name"] = current_app.config["MYSQL_POOL_NAME"]
+
+        if current_app.config["MYSQL_POOL_SIZE"]:
+            arguments["pool_size"] = current_app.config["MYSQL_POOL_SIZE"]
+
+        if current_app.config["MYSQL_POOL_RESET_SESSION"]:
+            arguments["pool_reset_session"] = current_app.config["MYSQL_POOL_RESET_SESSION"]
+
+        if current_app.config["MYSQL_COMPRESS"]:
+            arguments["compress"] = current_app.config["MYSQL_COMPRESS"]
+
+        if current_app.config["MYSQL_CONVERTER_CLASS"]:
+            arguments["converter_class"] = current_app.config["MYSQL_CONVERTER_CLASS"]
+
+        if current_app.config["MYSQL_FABRIC"]:
+            arguments["fabric"] = current_app.config["MYSQL_FABRIC"]
+
+        if current_app.config["MYSQL_FAILOVER"]:
+            arguments["failover"] = current_app.config["MYSQL_FAILOVER"]
+
+        if current_app.config["MYSQL_OPTION_FILES"]:
+            arguments["option_files"] = current_app.config["MYSQL_OPTION_FILES"]
+
+        if current_app.config["MYSQL_OPTION_GROUPS"]:
+            arguments["option_groups"] = current_app.config["MYSQL_OPTION_GROUPS"]
+
+        if current_app.config["MYSQL_ALLOW_LOCAL_INFILE"]:
+            arguments["allow_local_infile"] = current_app.config["MYSQL_ALLOW_LOCAL_INFILE"]
+
+        if current_app.config["MYSQL_USE_PURE"]:
+            arguments["USE_PURE"] = current_app.config["MYSQL_USE_PURE"]
 
         return mysql.connector.connect(**arguments)
 
