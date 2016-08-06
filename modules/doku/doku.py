@@ -23,10 +23,14 @@ from operator import setitem
 from time import sleep
 from cgi import parse_header
 from itertools import islice
-from .exceptions import DownloadError, ImportError
+from .exceptions import HttpError, ImportError, GeocodeError
+from re import compile
+from pyproj import Proj, transform
 
 
 class Doku(object):
+    geocode_url = "http://geoportaal.maaamet.ee/url/xgis-ky.php"
+
     def __init__(self, amphora_location, temp_dir):
         if not amphora_location:
             raise ValueError
@@ -55,6 +59,41 @@ class Doku(object):
             f.write(text)
         return out_filename
 
+    def extract_cadastral(self, text):
+        pattern = compile("\d{5}:\d{3}:\d{4}")
+        return pattern.findall(text)
+
+    def geocode_cadastral(self, cadastral_number):
+        """Converting cadastral number into geographic coordinates using xgis-ky service
+        http://geoportaal.maaamet.ee/est/Teenused/Poordumine-kaardirakendusse-labi-URLi-p9.html#a13
+
+        :param cadastral_number: cadastral number to retrieve coordinates for.
+        """
+        if not cadastral_number:
+            raise ValueError
+
+        result = {"cadastral": cadastral_number}
+
+        querystring = {"what": "tsentroid",
+                       "out": "json",
+                       "ky": cadastral_number}
+        response = requests.get(self.geocode_url, params=querystring)
+        if response.ok:
+            try:
+                json = response.json()["1"]
+                result["x"] = json["X"]
+                result["y"] = json["Y"]
+            except (ValueError, KeyError):
+                raise GeocodeError(response.status_code, cadastral_number)
+
+            wgs84 = Proj(init="epsg:4326")
+            lest97 = Proj(init="epsg:3301")
+            result["lon"], result["lat"] = transform(lest97, wgs84, json["X"], json["Y"])
+
+            return result
+        else:
+            raise HttpError(response.status_code, self.geocode_url)
+
     def download_file(self, url, out_filename, block_size=1024,
                       timeout=20, extension_from_header=False):
         response = requests.get(url, stream=True, timeout=timeout)
@@ -69,7 +108,7 @@ class Doku(object):
                     f.write(block)
             return out_filename
         else:
-            raise DownloadError(response.status_code, url)
+            raise HttpError(response.status_code, url)
 
     def download_documents_list(self, topic_filter):
         filepath = os_path.join(self.temp_dir, "act.json")
@@ -118,8 +157,7 @@ class Doku(object):
 
                 for i in range(retries):
                     try:
-                        downloaded_file = self.download_file(url, filename,
-                                                             extension_from_header=True)
+                        downloaded_file = self.download_file(url, filename, extension_from_header=True)
                     except ReadTimeout:
                         sleep(retry_delay * i)
                         continue

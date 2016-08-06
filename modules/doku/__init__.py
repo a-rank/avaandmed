@@ -13,4 +13,4 @@
 # limitations under the License.
 
 from .doku import Doku
-from .exceptions import DownloadError, ImportError
+from .exceptions import HttpError, ImportError, GeocodeError

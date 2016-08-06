@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class DownloadError(Exception):
+class HttpError(Exception):
     def __init__(self, response_code, file_url):
         Exception.__init__(self)
         self.response_code = response_code
@@ -23,3 +23,10 @@ class ImportError(Exception):
     def __init__(self, item_id):
         Exception.__init__(self)
         self.item_id = item_id
+
+
+class GeocodeError(Exception):
+    def __init__(self, response_code, cadastral_number):
+        Exception.__init__(self)
+        self.response_code = response_code
+        self.cadastral_number = cadastral_number
