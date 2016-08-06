@@ -108,6 +108,7 @@ def create():
             cursor.execute("CREATE DATABASE IF NOT EXISTS {db} DEFAULT CHARACTER SET 'utf8'".format(db=db_name))
         except Error:
             print("Failed creating database: {}".format(Error))
+        cursor.close()
 
     app.config["MYSQL_DB"] = db_name
     with app.app_context():
@@ -115,7 +116,10 @@ def create():
         cursor = connection.cursor()
         for table, sql in tables.items():
             print("Creating table {table}".format(table=table))
-            cursor.execute(sql)
+            try:
+                cursor.execute(sql)
+            except Error:
+                print("Failed creating table: {}".format(Error))
 
         cursor.execute("INSERT INTO `topic` (`id`, `title`) VALUES"
                        "	(5059,'Planeerimine ja ehitus'),"
