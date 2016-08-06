@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import requests
 import fulltext
 
-from requests.exceptions import ReadTimeout
 from os import path as os_path
 from ijson import parse as ijson_parse
 from collections import defaultdict, OrderedDict
@@ -23,9 +21,10 @@ from operator import setitem
 from time import sleep
 from cgi import parse_header
 from itertools import islice
-from .exceptions import HttpError, ImportError, GeocodeError
 from re import compile
 from pyproj import Proj, transform
+from .exceptions import HttpError, ImportError, GeocodeError
+from .utils import get_with_retries
 
 
 class Doku(object):
@@ -63,7 +62,7 @@ class Doku(object):
         pattern = compile("\d{5}:\d{3}:\d{4}")
         return pattern.findall(text)
 
-    def geocode_cadastral(self, cadastral_number):
+    def geocode_cadastral(self, cadastral_number, retries=3):
         """Converting cadastral number into geographic coordinates using xgis-ky service
         http://geoportaal.maaamet.ee/est/Teenused/Poordumine-kaardirakendusse-labi-URLi-p9.html#a13
 
@@ -73,11 +72,10 @@ class Doku(object):
             raise ValueError
 
         result = {"cadastral": cadastral_number}
-
         querystring = {"what": "tsentroid",
                        "out": "json",
                        "ky": cadastral_number}
-        response = requests.get(self.geocode_url, params=querystring)
+        response = get_with_retries(retries, url=self.geocode_url, params=querystring)
         if response.ok:
             try:
                 json = response.json()["1"]
@@ -89,14 +87,13 @@ class Doku(object):
             wgs84 = Proj(init="epsg:4326")
             lest97 = Proj(init="epsg:3301")
             result["lon"], result["lat"] = transform(lest97, wgs84, json["X"], json["Y"])
-
             return result
         else:
             raise HttpError(response.status_code, self.geocode_url)
 
     def download_file(self, url, out_filename, block_size=1024,
-                      timeout=20, extension_from_header=False):
-        response = requests.get(url, stream=True, timeout=timeout)
+                      timeout=20, extension_from_header=False, retries=3):
+        response = get_with_retries(retries, url=url, timeout=timeout)
         if response.ok:
             if extension_from_header:
                 _, params = parse_header(response.headers.get("content-disposition", ""))
@@ -141,7 +138,7 @@ class Doku(object):
         return files
 
     def download_documents(self, topic_filter, id_stop_at=None,
-                           delay=None, extract_text=False, callback=None, retries=3):
+                           delay=None, extract_text=False, callback=None):
         downloaded_files = {}
         documents = self.download_documents_list(topic_filter)
         if len(documents):
@@ -149,24 +146,13 @@ class Doku(object):
                 stop_at = documents.keys().index(id_stop_at)
                 documents = OrderedDict(islice(documents.items(), 0, stop_at))
 
-            retry_delay = 1
             for item_id, data in documents.items():
                 file_id, _, _, _ = data
                 url = self.create_document_url(item_id, file_id)
                 filename = os_path.join(self.temp_dir, str(item_id))
-
-                for i in range(retries):
-                    try:
-                        downloaded_file = self.download_file(url, filename, extension_from_header=True)
-                    except ReadTimeout:
-                        sleep(retry_delay * i)
-                        continue
-                    else:
-                        break
-                else:
-                    raise ImportError(item_id)
-
-                downloaded_files[item_id] = {"file": downloaded_file, "data": data}
+                downloaded_file = self.download_file(url, filename, extension_from_header=True)
+                downloaded_files[item_id] = {"file": downloaded_file,
+                                             "data": data}
 
                 if extract_text:
                     downloaded_files[item_id]["text"] = self.extract_document_text(downloaded_file)

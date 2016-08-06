@@ -13,6 +13,10 @@
 # limitations under the License.
 
 from uuid import uuid4
+import requests
+from requests.exceptions import Timeout, ConnectTimeout
+from time import sleep
+from .exceptions import HttpError
 
 
 def doku_property():
@@ -28,3 +32,16 @@ def doku_property():
             setattr(instance, property_name, value)
 
     return property(property_getter, property_setter)
+
+
+def get_with_retries(retries, retry_delay=2, **arguments):
+    for i in range(retries):
+        try:
+            response = requests.get(**arguments)
+        except Timeout, ConnectTimeout:
+            sleep(retry_delay * i)
+            continue
+        else:
+            return response
+    else:
+        raise HttpError(requests.codes.timeout, arguments.get("url", ""))

@@ -13,10 +13,10 @@
 # limitations under the License.
 
 class HttpError(Exception):
-    def __init__(self, response_code, file_url):
+    def __init__(self, response_code, url):
         Exception.__init__(self)
         self.response_code = response_code
-        self.file_url = file_url
+        self.file_url = url
 
 
 class ImportError(Exception):
