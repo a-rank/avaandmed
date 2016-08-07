@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import fulltext
+import io
 
 from os import path as os_path
 from ijson import parse as ijson_parse
@@ -46,17 +47,13 @@ class Doku(object):
         return "{amphora_url}/?itm={itm}&af={af}".format(amphora_url=self.amphora_url,
                                                          itm=item_id, af=item_file_id)
 
-    def extract_document_text(self, filename, out_filename=None):
-        if not out_filename:
-            out_filename = "".join([filename, ".txt"])
+    def extract_document_text(self, filename, encoding="iso-8859-13"):
         _, extension = os_path.splitext(filename)
         type = None
         if not extension in {".doc", ".docx", ".rtf", ".pdf", ".odt"}:
             type = ("application/msword", None)
-        text = fulltext.get(filename, type=type)
-        with open(out_filename, "w") as f:
-            f.write(text)
-        return out_filename
+        text = unicode(fulltext.get(filename, type=type), encoding=encoding)
+        return text
 
     def extract_cadastral(self, text):
         pattern = compile("\d{5}:\d{3}:\d{4}")
@@ -122,7 +119,7 @@ class Doku(object):
             "Acts.item.end_map": lambda attributes, value: attributes.clear()
         }
 
-        with open(filepath, "r") as f:
+        with io.open(filepath, "r") as f:
             parser = ijson_parse(f)
             for prefix, event, value in parser:
                 if (prefix, event) == ("Acts.item", "end_map"):
@@ -153,9 +150,12 @@ class Doku(object):
                 downloaded_file = self.download_file(url, filename, extension_from_header=True)
                 downloaded_files[item_id] = {"file": downloaded_file,
                                              "data": data}
-
                 if extract_text:
-                    downloaded_files[item_id]["text"] = self.extract_document_text(downloaded_file)
+                    text = self.extract_document_text(downloaded_file)
+                    text_filename = "".join([filename, ".txt"])
+                    downloaded_files[item_id]["text"] = text_filename
+                    with io.open(text_filename, "w", encoding="utf8") as f:
+                        f.write(text)
 
                 if callback:
                     callback(item_id, downloaded_files[item_id])
