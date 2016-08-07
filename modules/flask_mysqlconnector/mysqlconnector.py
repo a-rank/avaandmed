@@ -191,3 +191,10 @@ class MySQLConnector(object):
             if not hasattr(ctx, "mysql_connector"):
                 ctx.mysql_connector = self.connect()
             return ctx.mysql_connector
+
+    @property
+    def have_cext(self):
+        try:
+            return mysql.connector.HAVE_CEXT
+        except AttributeError:
+            return False
