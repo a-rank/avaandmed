@@ -57,7 +57,7 @@ class Doku(object):
 
     def extract_cadastral(self, text):
         pattern = compile("\d{5}:\d{3}:\d{4}")
-        return pattern.findall(text)
+        return set(pattern.findall(text))
 
     def geocode_cadastral(self, cadastral_number, retries=3):
         """Converting cadastral number into geographic coordinates using xgis-ky service
@@ -136,7 +136,7 @@ class Doku(object):
 
     def download_documents(self, topic_filter, id_stop_at=None,
                            delay=None, extract_text=False, callback=None):
-        downloaded_files = {}
+        downloaded_files = OrderedDict()
         documents = self.download_documents_list(topic_filter)
         if len(documents):
             if id_stop_at:
@@ -154,6 +154,7 @@ class Doku(object):
                     text = self.extract_document_text(downloaded_file)
                     text_filename = "".join([filename, ".txt"])
                     downloaded_files[item_id]["text"] = text_filename
+                    downloaded_files[item_id]["cadastral"] = self.extract_cadastral(text)
                     with io.open(text_filename, "w", encoding="utf8") as f:
                         f.write(text)
 

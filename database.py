@@ -14,10 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
+
 from flask_script import Manager
 from app.context import Doku
 from app import db
-from mysql.connector import Error
+from mysql.connector import Error, IntegrityError
+from datetime import datetime
 
 manager = Manager(usage="Perform database operations", description="")
 
@@ -30,6 +33,7 @@ def test():
         try:
             connection = db.connection
             connection.ping(reconnect=False, attempts=1, delay=0)
+            print("Using C extension: {}".format(db.have_cext))
             print("Connected to {host} at {port}. Server version: {info}".format(host=connection.server_host,
                                                                                  port=connection.server_port,
                                                                                  info=connection.get_server_info()))
@@ -58,14 +62,14 @@ def create():
         "  `item_id` int(11) unsigned NOT NULL,"
         "  `topic_id` int(11) unsigned NOT NULL,"
         "  `item_file_id` int(11) unsigned NOT NULL,"
-        "  `title` text NOT NULL,"
+        "  `title` text  NOT NULL,"
         "  `document_date` datetime DEFAULT NULL,"
         "  `import_date` datetime NOT NULL DEFAULT NOW(),"
-        "  `contents` mediumtext NOT NULL,"
+        "  `contents` mediumtext  NOT NULL,"
         "  PRIMARY KEY (`id`),"
         "  UNIQUE KEY `item_id_idx` (`item_id`),"
         "  KEY `topic_id_idx` (`topic_id`)"
-        ") ENGINE=MyISAM DEFAULT CHARSET=utf8;"
+        ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;"
     )
 
     tables["import"] = (
@@ -128,6 +132,8 @@ def create():
                        "	(50287,'Detailplaneeringute vastuvõtmine'),"
                        "	(50288,'Projekteerimistingimuste määramine'),"
                        "	(50344,'Maakorraldus');")
+
+        connection.commit()
         cursor.close()
 
 
@@ -143,29 +149,60 @@ def fetch():
                 temp_dir=app.config["TEMP_DIR"])
 
     # 269660
-    downloaded = doku.download_documents(id_stop_at=269660,
-                                         topic_filter=app.config["AMPHORA_TOPICS"],
+    id_stop_at = 269660,
+    downloaded = doku.download_documents(topic_filter=app.config["AMPHORA_TOPICS"],
                                          delay=5,
                                          extract_text=True,
                                          callback=downloaded_callback)
 
-    add_document = ("INSERT INTO `document`"
+    sql_document = ("INSERT INTO `document`"
                     " (`item_id`, `topic_id`, `item_file_id`, `title`, `document_date`, `contents`)"
-                    " VALUES (%s, %s, %s, %s, %s, %s)")
+                    " VALUES (?, ?, ?, ?, ?, ?)")
 
-    add_coordinate = ("INSERT INTO `coordinate`"
+    sql_coordinate = ("INSERT INTO `coordinate`"
                       " (`cadastral_number`, `coordinate`)"
                       " VALUES (%s, ST_PointFromText('POINT(%s %s)'))")
 
-    add_locations = ("INSERT INTO `locations`"
+    sql_locations = ("INSERT INTO `locations`"
                      " (`document_id`, `coordinate_id`)"
-                     " VALUES (%s, %s)")
+                     " VALUES (?, ?)")
 
-    add_import = ("INSERT INTO `import`"
+    sql_import = ("INSERT INTO `import`"
                   " (`imported`, `item_id`, `result`, `description`)"
-                  " VALUES (%s, %s, %s, %s)")
+                  " VALUES (?, ?, ?, ?)")
+
+    connection = db.connection
+    prepared_cursor_document = connection.cursor(prepared=True)
+    prepared_cursor_locations = connection.cursor(prepared=True)
+    prepared_cursor_import = connection.cursor(prepared=True)
+    cursor_coordinate = connection.cursor()
+
+    first_item_id = 0
+    if len(downloaded):
+        first_item_id = downloaded.keys()[0]
 
     for item_id, document in downloaded.items():
-        pass
+        cadastrals = document["cadastral"]
+        if len(cadastrals):
+            file_id, topic_id, title, date = document["data"]
+            mysql_date = datetime.strptime(date[:-1], "%Y-%m-%dT%H:%M:%S")
+            with io.open(document["text"], "r", encoding="utf8") as f:
+                prepared_cursor_document.execute(sql_document,
+                                                 (item_id, topic_id, file_id, title, mysql_date, f.read()))
+            document_id = prepared_cursor_document.lastrowid
+            for number in cadastrals:
+                geo = doku.geocode_cadastral(number)
+                try:
+                    cursor_coordinate.execute(sql_coordinate, (number, geo.get("lon"), geo.get("lat")))
+                except IntegrityError:
+                    continue
+                coordinate_id = cursor_coordinate.lastrowid
+                prepared_cursor_locations.execute(sql_locations, (document_id, coordinate_id))
 
-    print len(downloaded)
+    prepared_cursor_import.execute(sql_import, (len(downloaded), first_item_id, True, ""))
+
+    connection.commit()
+    prepared_cursor_document.close()
+    prepared_cursor_locations.close()
+    prepared_cursor_import.close()
+    cursor_coordinate.close()
