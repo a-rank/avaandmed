@@ -51,8 +51,8 @@ class MySQLConnector(object):
         app.config.setdefault("MYSQL_SSL_VERIFY_CERT", False)
         app.config.setdefault("MYSQL_FORCE_IPV6", False)
         app.config.setdefault("MYSQL_POOL_NAME", None)
-        app.config.setdefault("MYSQL_POOL_SIZE", 5)
-        app.config.setdefault("MYSQL_POOL_RESET_SESSION", True)
+        app.config.setdefault("MYSQL_POOL_SIZE", None)
+        app.config.setdefault("MYSQL_POOL_RESET_SESSION", None)
         app.config.setdefault("MYSQL_COMPRESS", False)
         app.config.setdefault("MYSQL_CONVERTER_CLASS", None)
         app.config.setdefault("MYSQL_FABRIC", None)
@@ -60,7 +60,7 @@ class MySQLConnector(object):
         app.config.setdefault("MYSQL_OPTION_FILES", None)
         app.config.setdefault("MYSQL_OPTION_GROUPS", None)
         app.config.setdefault("MYSQL_ALLOW_LOCAL_INFILE", True)
-        app.config.setdefault("MYSQL_USE_PURE", False)
+        app.config.setdefault("MYSQL_USE_PURE", True)
 
         if hasattr(app, "teardown_appcontext"):
             app.teardown_appcontext(self.teardown)
@@ -175,7 +175,7 @@ class MySQLConnector(object):
             arguments["allow_local_infile"] = current_app.config["MYSQL_ALLOW_LOCAL_INFILE"]
 
         if current_app.config["MYSQL_USE_PURE"]:
-            arguments["USE_PURE"] = current_app.config["MYSQL_USE_PURE"]
+            arguments["use_pure"] = current_app.config["MYSQL_USE_PURE"]
 
         return mysql.connector.connect(**arguments)
 
