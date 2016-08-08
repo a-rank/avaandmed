@@ -53,7 +53,7 @@ def get_asset_entry(url, username, password, entry_id):
     url = "{base_url}/assetentry/get-entry/{parameters}".format(base_url=url,
                                                                 parameters=parameters)
     response = requests.get(url, auth=HTTPBasicAuth(username, password))
-    return response.text()
+    return response.text
 
 
 #: com.liferay.portlet.asset.service.AssetEntryServiceUtil#getEntriesCount
@@ -62,7 +62,7 @@ def get_asset_entries_count(url, username, password, category_id):
     url = "{base_url}/assetentry/get-entries-count/{parameters}".format(base_url=url,
                                                                         parameters=parameters)
     response = requests.get(url, auth=HTTPBasicAuth(username, password))
-    return response.text()
+    return response.text
 
 
 #: com.liferay.portlet.journal.service.JournalArticleServiceUtil#getLatestArticle
@@ -107,4 +107,4 @@ def get_file_entry(url, username, password, file_entry_id):
 def get_build_number(url, username, password, ):
     url = "{_base_url}/portal/get-build-number"
     response = requests.get(url, auth=HTTPBasicAuth(username, password))
-    return response.text()
+    return response.text

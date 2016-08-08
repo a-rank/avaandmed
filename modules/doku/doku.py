@@ -79,7 +79,7 @@ class Doku(object):
                 result["x"] = json["X"]
                 result["y"] = json["Y"]
             except (ValueError, KeyError):
-                raise GeocodeError(response.status_code, cadastral_number)
+                raise GeocodeError(cadastral_number)
 
             wgs84 = Proj(init="epsg:4326")
             lest97 = Proj(init="epsg:3301")
@@ -146,16 +146,16 @@ class Doku(object):
             for item_id, data in documents.items():
                 file_id, _, _, _ = data
                 url = self.create_document_url(item_id, file_id)
-                filename = os_path.join(self.temp_dir, str(item_id))
-                downloaded_file = self.download_file(url, filename, extension_from_header=True)
+                filepath = os_path.join(self.temp_dir, str(item_id))
+                downloaded_file = self.download_file(url, filepath, extension_from_header=True)
                 downloaded_files[item_id] = {"file": downloaded_file,
                                              "data": data}
                 if extract_text:
                     text = self.extract_document_text(downloaded_file)
-                    text_filename = "".join([filename, ".txt"])
-                    downloaded_files[item_id]["text"] = text_filename
+                    text_file = "".join([filepath, ".txt"])
+                    downloaded_files[item_id]["text"] = text_file
                     downloaded_files[item_id]["cadastral"] = self.extract_cadastral(text)
-                    with io.open(text_filename, "w", encoding="utf8") as f:
+                    with io.open(text_file, "w", encoding="utf8") as f:
                         f.write(text)
 
                 if callback:

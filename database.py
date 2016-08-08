@@ -17,10 +17,11 @@
 import io
 
 from flask_script import Manager
-from app.context import Doku
+from app.context import Doku, GeocodeError
 from app import db
 from mysql.connector import Error, IntegrityError
 from datetime import datetime
+from collections import OrderedDict
 
 manager = Manager(usage="Perform database operations", description="")
 
@@ -44,16 +45,16 @@ def test():
 @manager.command
 def create():
     "Create database"
-    tables = {}
-    tables["coordinate"] = (
-        "CREATE TABLE IF NOT EXISTS `coordinate` ("
+    tables = OrderedDict()
+    tables["cadastral"] = (
+        "CREATE TABLE IF NOT EXISTS `cadastral` ("
         "  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,"
-        "  `cadastral_number` varchar(14) NOT NULL DEFAULT '',"
+        "  `number` varchar(14) NOT NULL,"
         "  `coordinate` point NOT NULL,"
         "  PRIMARY KEY (`id`),"
-        "  UNIQUE KEY `cadastral_number_idx` (`cadastral_number`),"
-        "  SPATIAL KEY `coordinate_idx` (`coordinate`)"
-        ") ENGINE=MyISAM DEFAULT CHARSET=utf8;"
+        "  UNIQUE KEY `idx_number` (`number`),"
+        "  SPATIAL KEY `idx_coordinate` (`coordinate`)"
+        ") ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     )
 
     tables["document"] = (
@@ -67,9 +68,10 @@ def create():
         "  `import_date` datetime NOT NULL DEFAULT NOW(),"
         "  `contents` mediumtext  NOT NULL,"
         "  PRIMARY KEY (`id`),"
-        "  UNIQUE KEY `item_id_idx` (`item_id`),"
-        "  KEY `topic_id_idx` (`topic_id`)"
-        ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;"
+        "  UNIQUE KEY `idx_item_id` (`item_id`),"
+        "  KEY `idx_topic_id` (`topic_id`),"
+        "  KEY `idx_item_file_id` (`item_file_id`)"
+        ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;"
     )
 
     tables["import"] = (
@@ -80,24 +82,28 @@ def create():
         "  `date` datetime NOT NULL DEFAULT NOW(),"
         "  `result` tinyint(1) NOT NULL DEFAULT '0',"
         "  `description` text,"
-        "  PRIMARY KEY (`id`)"
-        ") ENGINE=MyISAM DEFAULT CHARSET=utf8;"
+        "  PRIMARY KEY (`id`),"
+        "  KEY `idx_item_id` (`item_id`)"
+        ") ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     )
 
     tables["locations"] = (
         "CREATE TABLE IF NOT EXISTS `locations` ("
         "  `document_id` int(11) unsigned NOT NULL,"
-        "  `coordinate_id` int(11) unsigned NOT NULL,"
-        "  PRIMARY KEY (`document_id`,`coordinate_id`)"
-        ") ENGINE=MyISAM DEFAULT CHARSET=utf8;"
+        "  `cadastral_id` int(11) unsigned NOT NULL,"
+        "  PRIMARY KEY (`document_id`,`cadastral_id`),"
+        "  KEY `idx_cadastral` (`cadastral_id`),"
+        "  CONSTRAINT `fk_cadastral` FOREIGN KEY (`cadastral_id`) REFERENCES `cadastral` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+        "  CONSTRAINT `fk_document` FOREIGN KEY (`document_id`) REFERENCES `document` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+        ") ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     )
 
     tables["topic"] = (
         "CREATE TABLE IF NOT EXISTS `topic` ("
         "  `id` int(11) unsigned NOT NULL,"
-        "  `title` varchar(255) NOT NULL DEFAULT '',"
+        "  `title` varchar(255) NOT NULL,"
         "  PRIMARY KEY (`id`)"
-        ") ENGINE=MyISAM DEFAULT CHARSET=utf8;"
+        ") ENGINE=InnoDB DEFAULT CHARSET=utf8;"
     )
 
     app = manager.parent.app
@@ -110,8 +116,8 @@ def create():
         try:
             print("Creating database {db}".format(db=db_name))
             cursor.execute("CREATE DATABASE IF NOT EXISTS {db} DEFAULT CHARACTER SET 'utf8'".format(db=db_name))
-        except Error:
-            print("Failed creating database: {}".format(Error))
+        except Error as err:
+            print("Failed creating database: {}".format(err.msg))
         cursor.close()
 
     app.config["MYSQL_DB"] = db_name
@@ -122,8 +128,8 @@ def create():
             print("Creating table {table}".format(table=table))
             try:
                 cursor.execute(sql)
-            except Error:
-                print("Failed creating table: {}".format(Error))
+            except Error as err:
+                print("Failed creating table: {}".format(err.msg))
 
         cursor.execute("INSERT INTO `topic` (`id`, `title`) VALUES"
                        "	(5059,'Planeerimine ja ehitus'),"
@@ -141,68 +147,99 @@ def downloaded_callback(id, files):
     print("Downloaded {id}".format(id=id))
 
 
+def get_textfile_as_utf8(filename):
+    with io.open(filename, "r", encoding="utf8") as f:
+        return f.read()
+
+
+def get_last_item_id(connection):
+    sql_latest = "SELECT `item_id` FROM `import` ORDER BY `id` DESC LIMIT 1"
+    last_item_id = None
+    cursor = connection.cursor()
+    cursor.execute(sql_latest)
+    result = cursor.fetchone()
+    if result:
+        (last_item_id,) = result
+    return last_item_id
+
+
 @manager.command
 def fetch():
     "Import documents from amphora"
-    app = manager.parent.app
-    doku = Doku(amphora_location=app.config["AMPHORA_LOCATION"],
-                temp_dir=app.config["TEMP_DIR"])
-
-    # 269660
-    id_stop_at = 269660,
-    downloaded = doku.download_documents(topic_filter=app.config["AMPHORA_TOPICS"],
-                                         delay=5,
-                                         extract_text=True,
-                                         callback=downloaded_callback)
-
     sql_document = ("INSERT INTO `document`"
                     " (`item_id`, `topic_id`, `item_file_id`, `title`, `document_date`, `contents`)"
                     " VALUES (?, ?, ?, ?, ?, ?)")
 
-    sql_coordinate = ("INSERT INTO `coordinate`"
-                      " (`cadastral_number`, `coordinate`)"
-                      " VALUES (%s, ST_PointFromText('POINT(%s %s)'))")
+    sql_cadastral = ("INSERT INTO `cadastral`"
+                     " (`number`, `coordinate`)"
+                     " VALUES (%s, ST_PointFromText('POINT(%s %s)'))")
 
     sql_locations = ("INSERT INTO `locations`"
-                     " (`document_id`, `coordinate_id`)"
+                     " (`document_id`, `cadastral_id`)"
                      " VALUES (?, ?)")
 
     sql_import = ("INSERT INTO `import`"
                   " (`imported`, `item_id`, `result`, `description`)"
                   " VALUES (?, ?, ?, ?)")
 
+    app = manager.parent.app
     connection = db.connection
+
+    id_stop_at = get_last_item_id(connection)
+    doku = Doku(amphora_location=app.config["AMPHORA_LOCATION"], temp_dir=app.config["TEMP_DIR"])
+    downloaded = doku.download_documents(id_stop_at=id_stop_at, topic_filter=app.config["AMPHORA_TOPICS"],
+                                         delay=5, extract_text=True, callback=downloaded_callback)
+
     prepared_cursor_document = connection.cursor(prepared=True)
     prepared_cursor_locations = connection.cursor(prepared=True)
     prepared_cursor_import = connection.cursor(prepared=True)
-    cursor_coordinate = connection.cursor()
+    cursor_cadastral = connection.cursor()
 
-    first_item_id = 0
-    if len(downloaded):
-        first_item_id = downloaded.keys()[0]
-
+    imported = 0
     for item_id, document in downloaded.items():
+        print("Processing {}".format(item_id))
         cadastrals = document["cadastral"]
         if len(cadastrals):
             file_id, topic_id, title, date = document["data"]
-            mysql_date = datetime.strptime(date[:-1], "%Y-%m-%dT%H:%M:%S")
-            with io.open(document["text"], "r", encoding="utf8") as f:
+            db_date = datetime.strptime(date[:-1], "%Y-%m-%dT%H:%M:%S")
+            text = get_textfile_as_utf8(document["text"])
+            try:
                 prepared_cursor_document.execute(sql_document,
-                                                 (item_id, topic_id, file_id, title, mysql_date, f.read()))
+                                                 (item_id, topic_id, file_id, title, db_date, text))
+            except IntegrityError:
+                print("Warning: document already exist {}".format(item_id))
+                continue
+
             document_id = prepared_cursor_document.lastrowid
+            imported += prepared_cursor_document.rowcount
             for number in cadastrals:
-                geo = doku.geocode_cadastral(number)
                 try:
-                    cursor_coordinate.execute(sql_coordinate, (number, geo.get("lon"), geo.get("lat")))
-                except IntegrityError:
+                    geo = doku.geocode_cadastral(number)
+                except GeocodeError as err:
+                    print("Warning: unable to geocode {}".format(err.cadastral_number))
                     continue
-                coordinate_id = cursor_coordinate.lastrowid
-                prepared_cursor_locations.execute(sql_locations, (document_id, coordinate_id))
+                try:
+                    cursor_cadastral.execute(sql_cadastral, (number, geo.get("lon"), geo.get("lat")))
+                except IntegrityError:
+                    print("Warning: cadastral already exist {}".format(number))
+                    continue
+                cadastral_id = cursor_cadastral.lastrowid
+                prepared_cursor_locations.execute(sql_locations, (document_id, cadastral_id))
 
-    prepared_cursor_import.execute(sql_import, (len(downloaded), first_item_id, True, ""))
+    first_item_id = id_stop_at
+    if len(downloaded):
+        first_item_id = downloaded.keys()[0]
 
-    connection.commit()
+    try:
+        prepared_cursor_import.execute(sql_import, (imported, first_item_id, True, ""))
+    except Error as err:
+        connection.rollback()
+        print("Error {}, {}. Changes rollbacked".format(err.errno, err.msg))
+    else:
+        connection.commit()
+        print("Imported {} documents".format(imported))
+
     prepared_cursor_document.close()
     prepared_cursor_locations.close()
     prepared_cursor_import.close()
-    cursor_coordinate.close()
+    cursor_cadastral.close()

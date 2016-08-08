@@ -17,5 +17,5 @@ import sys
 
 sys.path.insert(0, os.path.abspath('..'))
 from modules.kovtp import Kovtp
-from modules.doku import Doku
+from modules.doku import Doku, GeocodeError
 from modules.flask_mysqlconnector import MySQLConnector

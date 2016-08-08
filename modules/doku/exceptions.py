@@ -26,7 +26,6 @@ class ImportError(Exception):
 
 
 class GeocodeError(Exception):
-    def __init__(self, response_code, cadastral_number):
+    def __init__(self, cadastral_number):
         Exception.__init__(self)
-        self.response_code = response_code
         self.cadastral_number = cadastral_number
