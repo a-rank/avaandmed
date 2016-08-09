@@ -66,11 +66,12 @@ def create():
         "  `title` text  NOT NULL,"
         "  `document_date` datetime DEFAULT NULL,"
         "  `import_date` datetime NOT NULL DEFAULT NOW(),"
-        "  `contents` mediumtext  NOT NULL,"
+        "  `contents` text  NOT NULL,"
         "  PRIMARY KEY (`id`),"
         "  UNIQUE KEY `idx_item_id` (`item_id`),"
         "  KEY `idx_topic_id` (`topic_id`),"
-        "  KEY `idx_item_file_id` (`item_file_id`)"
+        "  KEY `idx_document_date` (`document_date`),"
+        "  FULLTEXT KEY `idx_contents` (`contents`)"
         ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;"
     )
 
