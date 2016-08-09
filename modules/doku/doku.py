@@ -89,7 +89,7 @@ class Doku(object):
             raise HttpError(response.status_code, self.geocode_url)
 
     def download_file(self, url, out_filename, block_size=1024,
-                      timeout=20, extension_from_header=False, retries=3):
+                      timeout=20, extension_from_header=False, retries=5):
         response = get_with_retries(retries, url=url, timeout=timeout)
         if response.ok:
             if extension_from_header:
