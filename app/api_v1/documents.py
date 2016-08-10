@@ -15,12 +15,14 @@
 from flask import jsonify, current_app, url_for, request
 from . import api
 from ..utils import Pagination
+from ..models import get_documents
 
 
 @api.route("/documents/")
 def get_documents():
     page = request.args.get("page", 1, type=int)
     pagination = Pagination("api.get_documents", page)
+    documents = get_documents(pagination.start(), pagination.end())
     return jsonify({
         "meta": {
             "count": None,
