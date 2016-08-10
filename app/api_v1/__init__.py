@@ -16,4 +16,4 @@ from flask import Blueprint
 
 api = Blueprint('api', __name__)
 
-from . import jobs, news, errors, busses, plannings
+from . import jobs, news, errors, busses, plannings, documents
