@@ -39,6 +39,9 @@ class Article:
         if document_extensions is not None:
             self.document_extensions = document_extensions
 
+    def __repr__(self):
+        return '<Article {}>'.format(self.get_article_id())
+
     def get_article_id(self):
         return self.article.get("articleId", 0)
 

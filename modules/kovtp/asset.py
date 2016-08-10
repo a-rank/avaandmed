@@ -21,6 +21,9 @@ class Asset:
             raise TypeError
         self.asset = asset
 
+    def __repr__(self):
+        return '<Asset {}>'.format(self.get_entry_id())
+
     def get_primary_key(self):
         return self.asset.get("classPK", 0)
 
