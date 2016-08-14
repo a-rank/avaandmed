@@ -161,6 +161,7 @@ def get_last_item_id(connection):
     result = cursor.fetchone()
     if result:
         (last_item_id,) = result
+    cursor.close()
     return last_item_id
 
 
