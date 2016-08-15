@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 
 from . import db
 from flask import url_for, abort
@@ -36,8 +37,8 @@ class Document:
         }
         if "contents" in self.result:
             json["contents"] = self.result["contents"]
-        if "coordinates" in self.result:
-            json["coordinates"] = self.result["coordinates"]
+        if "geojson" in self.result:
+            json["geojson"] = self.result["geojson"]
         return json
 
 
@@ -70,12 +71,22 @@ def fetch_document_or_404(id):
     if not result:
         abort(404)
 
-    coordinates_sql = ("SELECT cadastral.number, ST_AsText(cadastral.coordinate) as coordinate"
-                       " FROM locations"
-                       " JOIN cadastral ON cadastral.id = locations.cadastral_id"
-                       " WHERE locations.document_id = {id}".format(id=id))
-    cursor.execute(coordinates_sql)
-    result["coordinates"] = [coordinate for coordinate in cursor]
-    cursor.close()
+    locations_sql = ("SELECT cadastral.number, ST_AsGeoJSON(cadastral.coordinate) as coordinate"
+                     " FROM locations"
+                     " JOIN cadastral ON cadastral.id = locations.cadastral_id"
+                     " WHERE locations.document_id = {id}".format(id=id))
+    cursor.execute(locations_sql)
+    features = []
+    for locations in cursor:
+        features.append({
+            "type": "Feature",
+            "geometry": json.loads(locations["coordinate"]),
+            "properties": {"cadastral": locations["number"]}
+        })
+    result["geojson"] = {
+        "type": "FeatureCollection",
+        "features": features
+    }
 
+    cursor.close()
     return Document(result)
