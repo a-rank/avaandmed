@@ -22,9 +22,17 @@ class Document:
         if not isinstance(result, dict):
             raise TypeError
         self.result = result
+        self.features = []
 
     def __repr__(self):
         return '<Document {}>'.format(0)
+
+    def add_feature(self, location):
+        self.features.append({
+            "type": "Feature",
+            "geometry": json.loads(location["coordinate"]),
+            "properties": {"cadastral": location["number"]}
+        })
 
     def to_json(self):
         id = self.result.get("id", 0)
@@ -37,8 +45,11 @@ class Document:
         }
         if "contents" in self.result:
             json["contents"] = self.result["contents"]
-        if "geojson" in self.result:
-            json["geojson"] = self.result["geojson"]
+        if len(self.features):
+            json["geojson"] = {
+                "type": "FeatureCollection",
+                "features": self.features
+            }
         return json
 
 
@@ -71,22 +82,15 @@ def fetch_document_or_404(id):
     if not result:
         abort(404)
 
+    document = Document(result)
+
     locations_sql = ("SELECT cadastral.number, ST_AsGeoJSON(cadastral.coordinate) as coordinate"
                      " FROM locations"
                      " JOIN cadastral ON cadastral.id = locations.cadastral_id"
                      " WHERE locations.document_id = {id}".format(id=id))
     cursor.execute(locations_sql)
-    features = []
-    for locations in cursor:
-        features.append({
-            "type": "Feature",
-            "geometry": json.loads(locations["coordinate"]),
-            "properties": {"cadastral": locations["number"]}
-        })
-    result["geojson"] = {
-        "type": "FeatureCollection",
-        "features": features
-    }
-
+    for location in cursor:
+        document.add_feature(location)
     cursor.close()
-    return Document(result)
+    
+    return document
