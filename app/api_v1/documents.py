@@ -15,7 +15,7 @@
 from flask import jsonify, current_app, url_for, request
 from . import api
 from ..utils import Pagination
-from ..models import fetch_documents
+from ..models import fetch_documents, fetch_document_or_404
 
 
 @api.route("/documents/")
@@ -35,7 +35,5 @@ def get_documents():
 
 @api.route("/documents/<int:id>")
 def get_document(id):
-    return jsonify({
-        "id": id,
-        "url": url_for("api.get_document", id=id, _external=True),
-    })
+    document = fetch_document_or_404(id)
+    return jsonify(document.to_json())

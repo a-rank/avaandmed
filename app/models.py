@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from . import db
-from flask import url_for
+from flask import url_for, abort
 
 
 class Document:
@@ -27,28 +27,55 @@ class Document:
 
     def to_json(self):
         id = self.result.get("id", 0)
-        return {
+        json = {
             "id": id,
             "url": url_for("api.get_document", id=id, _external=True),
-            "topic": self.result.get("topic_title", ""),
+            "topic": self.result.get("topic", ""),
             "title": self.result.get("title", ""),
             "document_date": self.result.get("document_date", ""),
         }
+        if "contents" in self.result:
+            json["contents"] = self.result["contents"]
+        if "coordinates" in self.result:
+            json["coordinates"] = self.result["coordinates"]
+        return json
 
 
 def fetch_documents(start, page):
-    documents = []
     connection = db.connection
-    sql = (
-        "SELECT d.id, d.item_id,"
-        " d.item_file_id, d.title, DATE_FORMAT(d.document_date,'%Y-%m-%dT%TZ') as document_date,"
-        " t.id as topic_id, t.title as topic_title,"
-        " DATE_FORMAT(d.import_date,'%Y-%m-%dT%TZ') as import_date"
-        " FROM document as d"
-        " LEFT JOIN topic as t ON d.topic_id = t.id"
-        " ORDER BY d.id ASC LIMIT {start}, {page}".format(start=start, page=page))
+    sql = ("SELECT d.id,"
+           " d.title, DATE_FORMAT(d.document_date,'%Y-%m-%dT%TZ') as document_date,"
+           " t.title as topic"
+           " FROM document as d"
+           " LEFT JOIN topic as t ON d.topic_id = t.id"
+           " ORDER BY d.id ASC LIMIT {start}, {page}".format(start=start, page=page))
     cursor = connection.cursor(dictionary=True)
     cursor.execute(sql)
     documents = [Document(result) for result in cursor]
     cursor.close()
     return documents
+
+
+def fetch_document_or_404(id):
+    connection = db.connection
+    document_sql = ("SELECT d.id,"
+                    " d.title, DATE_FORMAT(d.document_date,'%Y-%m-%dT%TZ') as document_date, d.contents,"
+                    " t.title as topic"
+                    " FROM document as d"
+                    " LEFT JOIN topic as t ON d.topic_id = t.id"
+                    " WHERE d.id = {id}".format(id=id))
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute(document_sql)
+    result = cursor.fetchone()
+    if not result:
+        abort(404)
+
+    coordinates_sql = ("SELECT cadastral.number, ST_AsText(cadastral.coordinate) as coordinate"
+                       " FROM locations"
+                       " JOIN cadastral ON cadastral.id = locations.cadastral_id"
+                       " WHERE locations.document_id = {id}".format(id=id))
+    cursor.execute(coordinates_sql)
+    result["coordinates"] = [coordinate for coordinate in cursor]
+    cursor.close()
+
+    return Document(result)
