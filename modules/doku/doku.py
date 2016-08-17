@@ -106,7 +106,7 @@ class Doku(object):
 
     def download_documents_list(self, topic_filter):
         filepath = os_path.join(self.temp_dir, "act.json")
-        self.download_file(self.amphora_api_url, filepath)
+        # self.download_file(self.amphora_api_url, filepath)
 
         files = OrderedDict()
         attributes = defaultdict(int)
@@ -147,12 +147,20 @@ class Doku(object):
                 file_id, _, _, _ = data
                 url = self.create_document_url(item_id, file_id)
                 filepath = os_path.join(self.temp_dir, str(item_id))
-                downloaded_file = self.download_file(url, filepath, extension_from_header=True)
+                # downloaded_file = self.download_file(url, filepath, extension_from_header=True)
+                ####################
+                downloaded_file = filepath
+                ####################
                 downloaded_files[item_id] = {"file": downloaded_file,
                                              "data": data}
                 if extract_text:
-                    text = self.extract_document_text(downloaded_file)
+                    # text = self.extract_document_text(downloaded_file)
                     text_file = "".join([filepath, ".txt"])
+                    ########################
+                    text = ""
+                    with io.open(text_file, "r") as f:
+                        text = f.read()
+                    ########################
                     downloaded_files[item_id]["text"] = text_file
                     downloaded_files[item_id]["cadastral"] = self.extract_cadastral(text)
                     with io.open(text_file, "w", encoding="utf8") as f:
@@ -161,7 +169,7 @@ class Doku(object):
                 if callback:
                     callback(item_id, downloaded_files[item_id])
 
-                if delay:
-                    sleep(delay)
+                # if delay:
+                    # sleep(delay)
 
         return downloaded_files

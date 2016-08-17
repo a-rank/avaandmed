@@ -23,15 +23,16 @@ class Document:
             raise TypeError
         self.result = result
         self.features = []
+        self.add_feature(result)
 
     def __repr__(self):
         return '<Document {}>'.format(0)
 
-    def add_feature(self, location):
+    def add_feature(self, result):
         self.features.append({
             "type": "Feature",
-            "geometry": json.loads(location["coordinate"]),
-            "properties": {"cadastral": location["number"]}
+            "geometry": json.loads(result["coordinate"]),
+            "properties": {"cadastral": result["number"]}
         })
 
     def to_json(self):
@@ -55,15 +56,28 @@ class Document:
 
 def fetch_documents(start, page):
     connection = db.connection
-    sql = ("SELECT d.id,"
-           " d.title, DATE_FORMAT(d.document_date,'%Y-%m-%dT%TZ') as document_date,"
-           " t.title as topic"
-           " FROM document as d"
-           " LEFT JOIN topic as t ON d.topic_id = t.id"
-           " ORDER BY d.id ASC LIMIT {start}, {page}".format(start=start, page=page))
+    sql = ("SELECT d.id, d.title,"
+           " DATE_FORMAT(d.document_date,'%Y-%m-%dT%TZ') as document_date,"
+           " t.title as topic,"
+           " c.number, ST_AsGeoJSON(c.coordinate) as coordinate"
+           " FROM (SELECT id, title, topic_id, document_date FROM document ORDER BY id DESC LIMIT {start}, {page}) AS d"
+           " JOIN locations AS l ON l.document_id = d.id"
+           " JOIN cadastral AS c ON c.id = l.cadastral_id"
+           " LEFT JOIN topic AS t ON d.topic_id = t.id".format(start=start, page=page))
     cursor = connection.cursor(dictionary=True)
     cursor.execute(sql)
-    documents = [Document(result) for result in cursor]
+    id = None
+    document = None
+    documents = []
+    for result in cursor:
+        result_id = result.get("id", 0)
+        if id != result_id:
+            id = result_id
+            if document is not None:
+                documents.append(document)
+            document = Document(result)
+        else:
+            document.add_feature(result)
     cursor.close()
     return documents
 
@@ -83,7 +97,6 @@ def fetch_document_or_404(id):
         abort(404)
 
     document = Document(result)
-
     locations_sql = ("SELECT cadastral.number, ST_AsGeoJSON(cadastral.coordinate) as coordinate"
                      " FROM locations"
                      " JOIN cadastral ON cadastral.id = locations.cadastral_id"
@@ -92,5 +105,5 @@ def fetch_document_or_404(id):
     for location in cursor:
         document.add_feature(location)
     cursor.close()
-    
+
     return document

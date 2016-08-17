@@ -165,6 +165,17 @@ def get_last_item_id(connection):
     return last_item_id
 
 
+def geocode_cadastrals(cadastrals, doku):
+    result = []
+    for number in cadastrals:
+        try:
+            result.append((number, doku.geocode_cadastral(number)))
+        except GeocodeError as err:
+            print("Warning: unable to geocode {}".format(err.cadastral_number))
+            continue
+    return result
+
+
 @manager.command
 def fetch():
     "Import documents from amphora"
@@ -178,7 +189,8 @@ def fetch():
 
     sql_locations = ("INSERT INTO `locations`"
                      " (`document_id`, `cadastral_id`)"
-                     " VALUES (?, ?)")
+                     " VALUES (?, "
+                     "(SELECT `id` from `cadastral` where `number` = ?))")
 
     sql_import = ("INSERT INTO `import`"
                   " (`imported`, `item_id`, `result`, `description`)"
@@ -186,7 +198,6 @@ def fetch():
 
     app = manager.parent.app
     connection = db.connection
-
     id_stop_at = get_last_item_id(connection)
     doku = Doku(amphora_location=app.config["AMPHORA_LOCATION"], temp_dir=app.config["TEMP_DIR"])
     downloaded = doku.download_documents(id_stop_at=id_stop_at, topic_filter=app.config["AMPHORA_TOPICS"],
@@ -198,9 +209,10 @@ def fetch():
     cursor_cadastral = connection.cursor()
 
     imported = 0
-    for item_id, document in downloaded.items():
+    for item_id in reversed(downloaded):
         print("Processing {}".format(item_id))
-        cadastrals = document["cadastral"]
+        document = downloaded[item_id]
+        cadastrals = geocode_cadastrals(document["cadastral"], doku)
         if len(cadastrals):
             file_id, topic_id, title, date = document["data"]
             db_date = datetime.strptime(date[:-1], "%Y-%m-%dT%H:%M:%S")
@@ -214,19 +226,12 @@ def fetch():
 
             document_id = prepared_cursor_document.lastrowid
             imported += prepared_cursor_document.rowcount
-            for number in cadastrals:
+            for number, geo in cadastrals:
                 try:
-                    geo = doku.geocode_cadastral(number)
-                except GeocodeError as err:
-                    print("Warning: unable to geocode {}".format(err.cadastral_number))
-                    continue
-                try:
-                    cursor_cadastral.execute(sql_cadastral, (number, geo.get("lon"), geo.get("lat")))
+                    cursor_cadastral.execute(sql_cadastral, (number, geo["lon"], geo["lat"]))
                 except IntegrityError:
                     print("Warning: cadastral already exist {}".format(number))
-                    continue
-                cadastral_id = cursor_cadastral.lastrowid
-                prepared_cursor_locations.execute(sql_locations, (document_id, cadastral_id))
+                prepared_cursor_locations.execute(sql_locations, (document_id, number))
 
     first_item_id = id_stop_at
     if len(downloaded):
