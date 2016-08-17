@@ -14,26 +14,29 @@
 import json
 
 from . import db
-from flask import url_for, abort
+from .context import Doku
+from flask import url_for, abort, current_app
 
 
 class Document:
     def __init__(self, result):
         if not isinstance(result, dict):
             raise TypeError
-        self.result = result
         self.features = []
+        self.result = result
         self.add_feature(result)
+        self.doku = Doku(amphora_location=current_app.config["AMPHORA_LOCATION"])
 
     def __repr__(self):
         return '<Document {}>'.format(0)
 
     def add_feature(self, result):
-        self.features.append({
-            "type": "Feature",
-            "geometry": json.loads(result["coordinate"]),
-            "properties": {"cadastral": result["number"]}
-        })
+        if "coordinate" in result:
+            self.features.append({
+                "type": "Feature",
+                "geometry": json.loads(result["coordinate"]),
+                "properties": {"cadastral": result["number"]}
+            })
 
     def to_json(self):
         id = self.result.get("id", 0)
@@ -51,6 +54,9 @@ class Document:
                 "type": "FeatureCollection",
                 "features": self.features
             }
+        if "item_file_id" and "item_id" in self.result:
+            json["file_url"] = self.doku.create_document_url(self.result["item_file_id"],
+                                                             self.result["item_id"])
         return json
 
 
@@ -66,44 +72,38 @@ def fetch_documents(start, page):
            " LEFT JOIN topic AS t ON d.topic_id = t.id".format(start=start, page=page))
     cursor = connection.cursor(dictionary=True)
     cursor.execute(sql)
-    id = None
-    document = None
-    documents = []
+    documents = {}
     for result in cursor:
-        result_id = result.get("id", 0)
-        if id != result_id:
-            id = result_id
-            if document is not None:
-                documents.append(document)
-            document = Document(result)
+        id = result.get("id", 0)
+        if id in documents:
+            documents[id].add_feature(result)
         else:
-            document.add_feature(result)
+            documents[id] = Document(result)
     cursor.close()
-    return documents
+    return documents.values()
 
 
 def fetch_document_or_404(id):
     connection = db.connection
-    document_sql = ("SELECT d.id,"
-                    " d.title, DATE_FORMAT(d.document_date,'%Y-%m-%dT%TZ') as document_date, d.contents,"
-                    " t.title as topic"
-                    " FROM document as d"
-                    " LEFT JOIN topic as t ON d.topic_id = t.id"
-                    " WHERE d.id = {id}".format(id=id))
+    sql = ("SELECT d.id, d.title, d.contents, d.item_id, d.item_file_id,"
+           " DATE_FORMAT(d.document_date,'%Y-%m-%dT%TZ') as document_date,"
+           " t.title as topic,"
+           " c.number, ST_AsGeoJSON(c.coordinate) as coordinate"
+           " FROM document AS d"
+           " JOIN locations AS l ON l.document_id = d.id"
+           " JOIN cadastral AS c ON c.id = l.cadastral_id"
+           " LEFT JOIN topic AS t ON d.topic_id = t.id"
+           " WHERE d.id = {id}".format(id=id))
     cursor = connection.cursor(dictionary=True)
-    cursor.execute(document_sql)
-    result = cursor.fetchone()
-    if not result:
-        abort(404)
-
-    document = Document(result)
-    locations_sql = ("SELECT cadastral.number, ST_AsGeoJSON(cadastral.coordinate) as coordinate"
-                     " FROM locations"
-                     " JOIN cadastral ON cadastral.id = locations.cadastral_id"
-                     " WHERE locations.document_id = {id}".format(id=id))
-    cursor.execute(locations_sql)
-    for location in cursor:
-        document.add_feature(location)
+    cursor.execute(sql)
+    document = None
+    for result in cursor:
+        if not document:
+            document = Document(result)
+        else:
+            document.add_feature(result)
     cursor.close()
 
+    if not document:
+        abort(404)
     return document

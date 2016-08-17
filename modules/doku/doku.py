@@ -14,6 +14,7 @@
 
 import fulltext
 import io
+import utils
 
 from os import path as os_path
 from ijson import parse as ijson_parse
@@ -22,30 +23,19 @@ from operator import setitem
 from time import sleep
 from cgi import parse_header
 from itertools import islice
-from re import compile
 from pyproj import Proj, transform
-from .exceptions import HttpError, ImportError, GeocodeError
-from .utils import get_with_retries
+from .exceptions import HttpError, GeocodeError
 
 
 class Doku(object):
     geocode_url = "http://geoportaal.maaamet.ee/url/xgis-ky.php"
 
-    def __init__(self, amphora_location, temp_dir):
+    def __init__(self, amphora_location):
         if not amphora_location:
             raise ValueError
         else:
             self.amphora_url = "http://atp.amphora.ee/{location}".format(location=amphora_location)
             self.amphora_api_url = "{amphora_url}/api/act".format(amphora_url=self.amphora_url)
-
-        if not temp_dir:
-            raise ValueError
-        else:
-            self.temp_dir = temp_dir
-
-    def create_document_url(self, item_id, item_file_id):
-        return "{amphora_url}/?itm={itm}&af={af}".format(amphora_url=self.amphora_url,
-                                                         itm=item_id, af=item_file_id)
 
     def extract_document_text(self, filename, encoding="iso-8859-13"):
         _, extension = os_path.splitext(filename)
@@ -55,9 +45,9 @@ class Doku(object):
         text = unicode(fulltext.get(filename, type=type), encoding=encoding)
         return text
 
-    def extract_cadastral(self, text):
-        pattern = compile("\d{5}:\d{3}:\d{4}")
-        return set(pattern.findall(text))
+    def create_document_url(self, item_id, item_file_id):
+        return "{amphora_url}/?itm={itm}&af={af}".format(amphora_url=self.amphora_url,
+                                                         itm=item_id, af=item_file_id)
 
     def geocode_cadastral(self, cadastral_number, retries=3):
         """Converting cadastral number into geographic coordinates using xgis-ky service
@@ -72,7 +62,7 @@ class Doku(object):
         querystring = {"what": "tsentroid",
                        "out": "json",
                        "ky": cadastral_number}
-        response = get_with_retries(retries, url=self.geocode_url, params=querystring)
+        response = utils.get_with_retries(retries, url=self.geocode_url, params=querystring)
         if response.ok:
             try:
                 json = response.json()["1"]
@@ -90,7 +80,7 @@ class Doku(object):
 
     def download_file(self, url, out_filename, block_size=1024,
                       timeout=20, extension_from_header=False, retries=5):
-        response = get_with_retries(retries, url=url, timeout=timeout)
+        response = utils.get_with_retries(retries, url=url, timeout=timeout)
         if response.ok:
             if extension_from_header:
                 _, params = parse_header(response.headers.get("content-disposition", ""))
@@ -104,8 +94,8 @@ class Doku(object):
         else:
             raise HttpError(response.status_code, url)
 
-    def download_documents_list(self, topic_filter):
-        filepath = os_path.join(self.temp_dir, "act.json")
+    def download_documents_list(self, topic_filter, folder):
+        filepath = os_path.join(folder, "act.json")
         self.download_file(self.amphora_api_url, filepath)
 
         files = OrderedDict()
@@ -134,10 +124,10 @@ class Doku(object):
                     setter(attributes, value)
         return files
 
-    def download_documents(self, topic_filter, id_stop_at=None,
+    def download_documents(self, topic_filter, folder, id_stop_at=None,
                            delay=None, extract_text=False, callback=None):
         downloaded_files = OrderedDict()
-        documents = self.download_documents_list(topic_filter)
+        documents = self.download_documents_list(topic_filter, folder)
         if len(documents):
             if id_stop_at:
                 stop_at = documents.keys().index(id_stop_at)
@@ -146,7 +136,7 @@ class Doku(object):
             for item_id, data in documents.items():
                 file_id, _, _, _ = data
                 url = self.create_document_url(item_id, file_id)
-                filepath = os_path.join(self.temp_dir, str(item_id))
+                filepath = os_path.join(folder, str(item_id))
                 downloaded_file = self.download_file(url, filepath, extension_from_header=True)
                 downloaded_files[item_id] = {"file": downloaded_file,
                                              "data": data}
@@ -154,7 +144,7 @@ class Doku(object):
                     text = self.extract_document_text(downloaded_file)
                     text_file = "".join([filepath, ".txt"])
                     downloaded_files[item_id]["text"] = text_file
-                    downloaded_files[item_id]["cadastral"] = self.extract_cadastral(text)
+                    downloaded_files[item_id]["cadastral"] = utils.extract_cadastral(text)
                     with io.open(text_file, "w", encoding="utf8") as f:
                         f.write(text)
 

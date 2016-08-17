@@ -14,9 +14,10 @@
 
 from uuid import uuid4
 import requests
-from requests.exceptions import Timeout, ConnectTimeout
+from requests.exceptions import Timeout
 from time import sleep
 from .exceptions import HttpError
+from re import compile
 
 
 def doku_property():
@@ -45,3 +46,8 @@ def get_with_retries(retries, retry_delay=2, **arguments):
             return response
     else:
         raise HttpError(requests.codes.timeout, arguments.get("url", ""))
+
+
+def extract_cadastral(text):
+    pattern = compile("\d{5}:\d{3}:\d{4}")
+    return set(pattern.findall(text))

@@ -199,9 +199,10 @@ def fetch():
     app = manager.parent.app
     connection = db.connection
     id_stop_at = get_last_item_id(connection)
-    doku = Doku(amphora_location=app.config["AMPHORA_LOCATION"], temp_dir=app.config["TEMP_DIR"])
+    doku = Doku(amphora_location=app.config["AMPHORA_LOCATION"])
     downloaded = doku.download_documents(id_stop_at=id_stop_at, topic_filter=app.config["AMPHORA_TOPICS"],
-                                         delay=5, extract_text=True, callback=downloaded_callback)
+                                         delay=5, extract_text=True, callback=downloaded_callback,
+                                         folder=app.config["TEMP_DIR"])
 
     prepared_cursor_document = connection.cursor(prepared=True)
     prepared_cursor_locations = connection.cursor(prepared=True)
