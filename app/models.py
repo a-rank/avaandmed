@@ -16,6 +16,7 @@ import json
 from . import db
 from .context import Doku
 from flask import url_for, abort, current_app
+from collections import OrderedDict
 
 
 class Document:
@@ -72,7 +73,7 @@ def fetch_documents(start, page):
            " LEFT JOIN topic AS t ON d.topic_id = t.id".format(start=start, page=page))
     cursor = connection.cursor(dictionary=True)
     cursor.execute(sql)
-    documents = {}
+    documents = OrderedDict()
     for result in cursor:
         id = result.get("id", 0)
         if id in documents:
