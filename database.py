@@ -71,7 +71,8 @@ def create():
         "  UNIQUE KEY `idx_item_id` (`item_id`),"
         "  KEY `idx_topic_id` (`topic_id`),"
         "  KEY `idx_document_date` (`document_date`),"
-        "  FULLTEXT KEY `idx_contents` (`contents`)"
+        "  FULLTEXT KEY `idx_contents` (`contents`),"
+        "  FULLTEXT KEY `idx_title` (`title`)"
         ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;"
     )
 
