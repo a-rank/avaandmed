@@ -15,8 +15,9 @@
 import fulltext
 import io
 import utils
+import subprocess
+import os
 
-from os import path as os_path
 from ijson import parse as ijson_parse
 from collections import defaultdict, OrderedDict
 from operator import setitem
@@ -36,14 +37,6 @@ class Doku(object):
         else:
             self.amphora_url = "http://atp.amphora.ee/{location}".format(location=amphora_location)
             self.amphora_api_url = "{amphora_url}/api/act".format(amphora_url=self.amphora_url)
-
-    def extract_document_text(self, filename, encoding="iso-8859-13"):
-        _, extension = os_path.splitext(filename)
-        type = None
-        if not extension in {".doc", ".docx", ".rtf", ".pdf", ".odt"}:
-            type = ("application/msword", None)
-        text = unicode(fulltext.get(filename, type=type), encoding=encoding)
-        return text
 
     def create_document_url(self, item_id, item_file_id):
         return "{amphora_url}/?itm={itm}&af={af}".format(amphora_url=self.amphora_url,
@@ -84,7 +77,7 @@ class Doku(object):
         if response.ok:
             if extension_from_header:
                 _, params = parse_header(response.headers.get("content-disposition", ""))
-                _, extension = os_path.splitext(params.get("filename", ""))
+                _, extension = os.path.splitext(params.get("filename", ""))
                 if extension:
                     out_filename = "".join([out_filename, extension])
             with open(out_filename, "w") as f:
@@ -94,8 +87,25 @@ class Doku(object):
         else:
             raise HttpError(response.status_code, url)
 
+    def extract_document_text(self, filename, encoding="iso-8859-13", language="est"):
+        name, extension = os.path.splitext(filename)
+        type = None
+        if not extension in {".doc", ".docx", ".rtf", ".pdf", ".odt"}:
+            type = ("application/msword", None)
+        text = unicode(fulltext.get(filename, type=type), encoding=encoding)
+        if extension == ".pdf" and len(text) == 0:
+            process = subprocess.Popen(("pypdfocr", "-l", language, filename), close_fds=True)
+            process.communicate()
+            ocr_filename = "{}_ocr{}".format(name, extension)
+            if os.path.isfile(ocr_filename):
+                os.rename(ocr_filename, filename)
+                text = unicode(fulltext.get(filename, type=type), encoding=encoding)
+            else:
+                print ("failed to ocr: {}".format(filename))
+        return text
+
     def download_documents_list(self, topic_filter, folder):
-        filepath = os_path.join(folder, "act.json")
+        filepath = os.path.join(folder, "act.json")
         self.download_file(self.amphora_api_url, filepath)
 
         files = OrderedDict()
@@ -136,7 +146,7 @@ class Doku(object):
             for item_id, data in documents.items():
                 file_id, _, _, _ = data
                 url = self.create_document_url(item_id, file_id)
-                filepath = os_path.join(folder, str(item_id))
+                filepath = os.path.join(folder, str(item_id))
                 downloaded_file = self.download_file(url, filepath, extension_from_header=True)
                 downloaded_files[item_id] = {"file": downloaded_file,
                                              "data": data}

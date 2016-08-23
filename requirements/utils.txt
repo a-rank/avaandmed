@@ -4,3 +4,8 @@ docx2txt
 unrtf
 odt2txt
 html2text
+tesseract
+imagemagick
+pypdfocr
+ghostscript
+poppler

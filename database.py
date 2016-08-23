@@ -71,8 +71,7 @@ def create():
         "  UNIQUE KEY `idx_item_id` (`item_id`),"
         "  KEY `idx_topic_id` (`topic_id`),"
         "  KEY `idx_document_date` (`document_date`),"
-        "  FULLTEXT KEY `idx_contents` (`contents`),"
-        "  FULLTEXT KEY `idx_title` (`title`)"
+        "  FULLTEXT KEY `idx_contents` (`contents`)"
         ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;"
     )
 
@@ -202,7 +201,7 @@ def fetch():
     id_stop_at = get_last_item_id(connection)
     doku = Doku(amphora_location=app.config["AMPHORA_LOCATION"])
     downloaded = doku.download_documents(id_stop_at=id_stop_at, topic_filter=app.config["AMPHORA_TOPICS"],
-                                         delay=5, extract_text=True, callback=downloaded_callback,
+                                         delay=1, extract_text=True, callback=downloaded_callback,
                                          folder=app.config["TEMP_DIR"])
 
     prepared_cursor_document = connection.cursor(prepared=True)
