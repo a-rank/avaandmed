@@ -20,9 +20,20 @@ from ..models import fetch_documents, fetch_document_or_404
 
 @api.route("/documents/")
 def get_documents():
+    to_date = request.args.get("toDate", type=str)
+    from_date = request.args.get("fromDate", type=str)
+    coordinate = request.args.get("coordinate", type=str)
+    search = request.args.get("search", type=str)
+
     page = request.args.get("page", 1, type=int)
     pagination = Pagination("api.get_documents", page)
-    documents = fetch_documents(pagination.start(), pagination.page_size)
+    documents = fetch_documents(start=pagination.start(),
+                                page=pagination.page_size,
+                                coordinate=coordinate,
+                                to_date=to_date,
+                                from_date=from_date,
+                                search=search)
+
     documents_count = len(documents)
     return jsonify({
         "documents": [document.to_json() for document in documents],

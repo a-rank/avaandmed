@@ -61,16 +61,51 @@ class Document:
         return json
 
 
-def fetch_documents(start, page):
-    connection = db.connection
+def fetch_documents(start, page, to_date=None, from_date=None,
+                    coordinate=None, search=None, distance_km=5):
+    filters = []
+    order_by = ""
+    group_by = ""
+    document_sql = ["SELECT d.id, d.title, d.topic_id, d.document_date FROM document as d"]
+
+    if from_date is not None:
+        filters.append("d.document_date <= '{filter}'".format(filter=from_date))
+        order_by = "ORDER BY document_date ASC"
+    if to_date is not None:
+        filters.append("d.document_date >= '{filter}'".format(filter=to_date))
+        order_by = "ORDER BY document_date ASC"
+    if search is not None:
+        filters.append("MATCH(d.contents) AGAINST('{filter}')".format(filter=search))
+        order_by = ""
+    if coordinate is not None:
+        lon, lat = coordinate.split(",")
+        filters.append("ST_Contains(ST_MakeEnvelope("
+                       "Point(({lon}+({km}/111)),({lat}+({km}/111))),"
+                       "Point(({lon}-({km}/111)),({lat}-({km}/111)))),"
+                       "c.coordinate)".format(lon=lon, lat=lat, km=distance_km))
+        order_by = "ORDER BY MIN(ST_Distance_Sphere(Point({lon}, {lat}), c.coordinate)) ASC".format(lon=lon, lat=lat)
+        document_sql.append("JOIN locations AS l ON l.document_id = d.id"
+                            " JOIN cadastral AS c ON c.id = l.cadastral_id")
+        group_by = "GROUP BY d.id"
+
+    if len(filters):
+        document_sql.append("WHERE {filters}".format(filters=" AND ".join(filters)))
+    if group_by:
+        document_sql.append(group_by)
+    if order_by:
+        document_sql.append(order_by)
+    document_sql.append("LIMIT {start}, {page}".format(start=start, page=page))
+
     sql = ("SELECT d.id, d.title,"
            " DATE_FORMAT(d.document_date,'%Y-%m-%dT%TZ') as document_date,"
            " t.title as topic,"
            " c.number, ST_AsGeoJSON(c.coordinate) as coordinate"
-           " FROM (SELECT id, title, topic_id, document_date FROM document ORDER BY id DESC LIMIT {start}, {page}) AS d"
+           " FROM ({document_sql}) AS d"
            " JOIN locations AS l ON l.document_id = d.id"
            " JOIN cadastral AS c ON c.id = l.cadastral_id"
-           " LEFT JOIN topic AS t ON d.topic_id = t.id".format(start=start, page=page))
+           " LEFT JOIN topic AS t ON d.topic_id = t.id".format(document_sql=" ".join(document_sql)))
+    
+    connection = db.connection
     cursor = connection.cursor(dictionary=True)
     cursor.execute(sql)
     documents = OrderedDict()
