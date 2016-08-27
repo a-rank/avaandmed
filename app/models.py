@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import json
+import iso8601
 
 from . import db
 from .context import Doku
@@ -67,22 +69,35 @@ def fetch_documents(start, page, to_date=None, from_date=None,
     order_by = ""
     group_by = ""
     document_sql = ["SELECT d.id, d.title, d.topic_id, d.document_date FROM document as d"]
+    connection = db.connection
 
     if from_date is not None:
+        try:
+            iso8601.parse_date(from_date)
+        except iso8601.ParseError:
+            abort(400)
         filters.append("d.document_date <= '{filter}'".format(filter=from_date))
-        order_by = "ORDER BY document_date ASC"
+        order_by = "ORDER BY document_date DESC"
     if to_date is not None:
+        try:
+            iso8601.parse_date(to_date)
+        except iso8601.ParseError:
+            abort(400)
         filters.append("d.document_date >= '{filter}'".format(filter=to_date))
-        order_by = "ORDER BY document_date ASC"
+        order_by = "ORDER BY document_date DESC"
     if search is not None:
-        filters.append("MATCH(d.contents) AGAINST('{filter}')".format(filter=search))
+        filters.append("MATCH(d.contents) AGAINST('{filter}')".format(filter=connection.converter.escape(search)))
         order_by = ""
     if coordinate is not None:
-        lon, lat = coordinate.split(",")
-        filters.append("ST_Contains(ST_MakeEnvelope("
-                       "Point(({lon}+({km}/111)),({lat}+({km}/111))),"
-                       "Point(({lon}-({km}/111)),({lat}-({km}/111)))),"
-                       "c.coordinate)".format(lon=lon, lat=lat, km=distance_km))
+        lon, lat = 0.0, 0.0
+        try:
+            lon, lat = coordinate.split(",", 1)
+            filters.append("ST_Contains(ST_MakeEnvelope("
+                           "Point(({lon}+({km}/111)),({lat}+({km}/111))),"
+                           "Point(({lon}-({km}/111)),({lat}-({km}/111)))),"
+                           "c.coordinate)".format(lon=float(lon), lat=float(lat), km=distance_km))
+        except ValueError:
+            abort(400)
         order_by = "ORDER BY MIN(ST_Distance_Sphere(Point({lon}, {lat}), c.coordinate)) ASC".format(lon=lon, lat=lat)
         document_sql.append("JOIN locations AS l ON l.document_id = d.id"
                             " JOIN cadastral AS c ON c.id = l.cadastral_id")
@@ -104,8 +119,7 @@ def fetch_documents(start, page, to_date=None, from_date=None,
            " JOIN locations AS l ON l.document_id = d.id"
            " JOIN cadastral AS c ON c.id = l.cadastral_id"
            " LEFT JOIN topic AS t ON d.topic_id = t.id".format(document_sql=" ".join(document_sql)))
-    
-    connection = db.connection
+
     cursor = connection.cursor(dictionary=True)
     cursor.execute(sql)
     documents = OrderedDict()
