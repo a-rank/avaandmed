@@ -17,6 +17,7 @@ import iso8601
 
 from . import db
 from .context import Doku
+from .utils import is_float
 from flask import url_for, abort, current_app
 from collections import OrderedDict
 
@@ -63,6 +64,24 @@ class Document:
         return json
 
 
+def get_coordinates_or_400(coordinate):
+    try:
+        lon, lat = coordinate.split(",", 1)
+    except ValueError:
+        abort(400)
+    else:
+        if not is_float(lon) or not is_float(lat):
+            abort(400)
+        return (lon, lat)
+
+
+def verify_date_or_400(date):
+    try:
+        iso8601.parse_date(date)
+    except iso8601.ParseError:
+        abort(400)
+
+
 def fetch_documents(start, page, to_date=None, from_date=None,
                     coordinate=None, search=None, distance_km=5):
     filters = []
@@ -72,33 +91,24 @@ def fetch_documents(start, page, to_date=None, from_date=None,
     connection = db.connection
 
     if from_date is not None:
-        try:
-            iso8601.parse_date(from_date)
-        except iso8601.ParseError:
-            abort(400)
+        verify_date_or_400(from_date)
         filters.append("d.document_date <= '{filter}'".format(filter=from_date))
         order_by = "ORDER BY document_date DESC"
     if to_date is not None:
-        try:
-            iso8601.parse_date(to_date)
-        except iso8601.ParseError:
-            abort(400)
+        verify_date_or_400(to_date)
         filters.append("d.document_date >= '{filter}'".format(filter=to_date))
         order_by = "ORDER BY document_date DESC"
     if search is not None:
         filters.append("MATCH(d.contents) AGAINST('{filter}')".format(filter=connection.converter.escape(search)))
         order_by = ""
     if coordinate is not None:
-        lon, lat = 0.0, 0.0
-        try:
-            lon, lat = coordinate.split(",", 1)
-            filters.append("ST_Contains(ST_MakeEnvelope("
-                           "Point(({lon}+({km}/111)),({lat}+({km}/111))),"
-                           "Point(({lon}-({km}/111)),({lat}-({km}/111)))),"
-                           "c.coordinate)".format(lon=float(lon), lat=float(lat), km=distance_km))
-        except ValueError:
-            abort(400)
-        order_by = "ORDER BY MIN(ST_Distance_Sphere(Point({lon}, {lat}), c.coordinate)) ASC".format(lon=lon, lat=lat)
+        lon, lat = get_coordinates_or_400(coordinate)
+        filters.append("ST_Contains(ST_MakeEnvelope("
+                       "Point(({lon}+({km}/111)),({lat}+({km}/111))),"
+                       "Point(({lon}-({km}/111)),({lat}-({km}/111)))),"
+                       "c.coordinate)".format(lon=float(lon), lat=float(lat), km=distance_km))
+        order_by = ("ORDER BY MIN(ST_Distance_Sphere("
+                    "Point({lon}, {lat}), c.coordinate)) ASC".format(lon=lon, lat=lat))
         document_sql.append("JOIN locations AS l ON l.document_id = d.id"
                             " JOIN cadastral AS c ON c.id = l.cadastral_id")
         group_by = "GROUP BY d.id"

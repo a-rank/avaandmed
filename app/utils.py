@@ -67,6 +67,15 @@ def get_article_content_by_type(article, result_type):
         return article.get_content_as_plain_text()
 
 
+def is_float(string):
+    try:
+        float(string)
+    except ValueError:
+        return False
+    else:
+        return True
+
+
 class Pagination(object):
     def __init__(self, base, page):
         self.base = base
