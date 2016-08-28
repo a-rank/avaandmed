@@ -77,10 +77,17 @@ def is_float(string):
 
 
 class Pagination(object):
-    def __init__(self, base, page):
+    def __init__(self, base, args):
         self.base = base
-        self.page = page
         self.page_size = current_app.config["PAGE_SIZE"]
+        self.page = args.get("page", 1, type=int)
+        self.args = args
+
+    def get_params(self, page):
+        params = self.args.to_dict()
+        params["_external"] = True
+        params["page"] = page
+        return params
 
     def start(self):
         if self.page >= 1:
@@ -98,10 +105,12 @@ class Pagination(object):
         if results_count != self.page_size:
             return None
         else:
-            return url_for(self.base, page=self.page + 1, _external=True)
+            params = self.get_params(self.page + 1)
+            return url_for(self.base, **params)
 
     def prev_url(self):
         if self.page <= 1:
             return None
         else:
-            return url_for(self.base, page=self.page - 1, _external=True)
+            params = self.get_params(self.page - 1)
+            return url_for(self.base, **params)

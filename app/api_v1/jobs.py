@@ -20,9 +20,8 @@ from ..utils import Pagination, get_article_content_by_type
 
 @api.route("/jobs/")
 def get_jobs():
-    page = request.args.get("page", 1, type=int)
     category_id = current_app.config["JSONWS_JOBS_CATEGORY_ID"]
-    pagination = Pagination("api.get_jobs", page)
+    pagination = Pagination("api.get_jobs", request.args)
     assets = kovtp.get_assets(category_id, pagination.start(), pagination.end())
     jobs = []
     for asset in assets:

@@ -20,9 +20,8 @@ from ..utils import Pagination, get_article_content_by_type
 
 @api.route("/news/")
 def get_all_news():
-    page = request.args.get("page", 1, type=int)
     category_id = current_app.config["JSONWS_NEWS_CATEGORY_ID"]
-    pagination = Pagination("api.get_all_news", page)
+    pagination = Pagination("api.get_all_news", request.args)
     assets = kovtp.get_assets(category_id, pagination.start(), pagination.end())
     news = []
     for asset in assets:

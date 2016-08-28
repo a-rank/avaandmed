@@ -19,7 +19,7 @@ from . import api
 @api.app_errorhandler(400)
 def bad_request(e):
     response = jsonify({"error": "bad request"})
-    response.status_code = 403
+    response.status_code = 400
     return response
 
 

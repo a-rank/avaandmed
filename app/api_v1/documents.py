@@ -25,8 +25,7 @@ def get_documents():
     coordinate = request.args.get("coordinate", type=str)
     search = request.args.get("search", type=str)
 
-    page = request.args.get("page", 1, type=int)
-    pagination = Pagination("api.get_documents", page)
+    pagination = Pagination("api.get_documents", request.args)
     documents = fetch_documents(start=pagination.start(),
                                 page=pagination.page_size,
                                 coordinate=coordinate,

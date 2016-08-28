@@ -85,7 +85,7 @@ def verify_date_or_400(date):
 def fetch_documents(start, page, to_date=None, from_date=None,
                     coordinate=None, search=None, distance_km=5):
     filters = []
-    order_by = ""
+    order_by = "ORDER BY d.id DESC"
     group_by = ""
     document_sql = ["SELECT d.id, d.title, d.topic_id, d.document_date FROM document as d"]
     connection = db.connection
@@ -93,11 +93,11 @@ def fetch_documents(start, page, to_date=None, from_date=None,
     if from_date is not None:
         verify_date_or_400(from_date)
         filters.append("d.document_date <= '{filter}'".format(filter=from_date))
-        order_by = "ORDER BY document_date DESC"
+        order_by = "ORDER BY d.document_date DESC"
     if to_date is not None:
         verify_date_or_400(to_date)
         filters.append("d.document_date >= '{filter}'".format(filter=to_date))
-        order_by = "ORDER BY document_date DESC"
+        order_by = "ORDER BY d.document_date DESC"
     if search is not None:
         filters.append("MATCH(d.contents) AGAINST('{filter}')".format(filter=connection.converter.escape(search)))
         order_by = ""
@@ -154,6 +154,7 @@ def fetch_document_or_404(id):
            " JOIN cadastral AS c ON c.id = l.cadastral_id"
            " LEFT JOIN topic AS t ON d.topic_id = t.id"
            " WHERE d.id = {id}".format(id=id))
+
     cursor = connection.cursor(dictionary=True)
     cursor.execute(sql)
     document = None
