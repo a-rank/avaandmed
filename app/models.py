@@ -153,8 +153,8 @@ def fetch_document_or_404(id):
            " JOIN locations AS l ON l.document_id = d.id"
            " JOIN cadastral AS c ON c.id = l.cadastral_id"
            " LEFT JOIN topic AS t ON d.topic_id = t.id"
-           " WHERE d.id = {id}".format(id=id))
-
+           " WHERE d.id = {:+d}".format(id))
+    
     cursor = connection.cursor(dictionary=True)
     cursor.execute(sql)
     document = None
