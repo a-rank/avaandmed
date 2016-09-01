@@ -47,7 +47,7 @@ class ProdConfig(Config):
     PAGE_SIZE = 50
 
     MYSQL_DB = "avaandmed"
-    MYSQL_DATABASE_HOST = "localhost"
+    MYSQL_HOST = "localhost"
 
 
 class DevConfig(Config):
