@@ -106,7 +106,7 @@ def fetch_documents(start, page, to_date=None, from_date=None,
         filters.append("ST_Contains(ST_MakeEnvelope("
                        "Point(({lon}+({km}/111)),({lat}+({km}/111))),"
                        "Point(({lon}-({km}/111)),({lat}-({km}/111)))),"
-                       "c.coordinate)".format(lon=float(lon), lat=float(lat), km=distance_km))
+                       "c.coordinate)".format(lon=lon, lat=lat, km=distance_km))
         order_by = ("ORDER BY MIN(ST_Distance_Sphere("
                     "Point({lon}, {lat}), c.coordinate)) ASC".format(lon=lon, lat=lat))
         document_sql.append("JOIN locations AS l ON l.document_id = d.id"
