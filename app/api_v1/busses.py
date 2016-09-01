@@ -14,11 +14,12 @@
 
 from flask import jsonify, current_app
 from . import api
-from .. import kovtp
-from ..utils import parse_busses_article
+from .. import cache, kovtp
+from ..utils import parse_busses_article, cache_key
 
 
 @api.route("/school-busses/")
+@cache.cached(timeout=600, key_prefix=cache_key)
 def get_busses():
     article_id = current_app.config["JSONWS_BUSSES_ARTICLE_ID"]
     group_id = current_app.config["JSONWS_GROUP_ID"]

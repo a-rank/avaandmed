@@ -14,11 +14,12 @@
 
 from flask import jsonify, current_app, url_for, request
 from . import api
-from .. import kovtp
-from ..utils import Pagination, get_article_content_by_type
+from .. import cache, kovtp
+from ..utils import Pagination, get_article_content_by_type, cache_key
 
 
 @api.route("/plannings/")
+@cache.cached(timeout=600, key_prefix=cache_key)
 def get_plannings():
     category_id = current_app.config["JSONWS_PLANNINGS_CATEGORY_ID"]
     pagination = Pagination("api.get_plannings", request.args)
@@ -45,6 +46,7 @@ def get_plannings():
 
 
 @api.route("/planning/<int:id>")
+@cache.cached(timeout=600, key_prefix=cache_key)
 def get_planning(id):
     result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)

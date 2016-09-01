@@ -13,11 +13,13 @@
 # limitations under the License.
 
 from flask import Flask
+from flask_caching import Cache
 from .context import Kovtp
 from .context import MySQLConnector
 
 kovtp = Kovtp()
 db = MySQLConnector()
+cache = Cache()
 
 
 def create_app(config):
@@ -27,6 +29,7 @@ def create_app(config):
     app.url_map.strict_slashes = False
 
     db.init_app(app)
+    cache.init_app(app)
 
     kovtp.jsonws_url = app.config["JSONWS_URL"]
     kovtp.jsonws_username = app.config["JSONWS_USERNAME"]

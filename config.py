@@ -41,6 +41,8 @@ class Config(object):
     JSON_AS_ASCII = False
     JSONIFY_MIMETYPE = "application/json; charset=utf-8"
 
+    CACHE_TYPE = "simple"
+
 
 class ProdConfig(Config):
     DEBUG = False
@@ -52,7 +54,7 @@ class ProdConfig(Config):
 
 class DevConfig(Config):
     DEBUG = True
-    PAGE_SIZE = 10
+    PAGE_SIZE = 50
 
     MYSQL_DB = "avaandmed"
     MYSQL_HOST = "localhost"

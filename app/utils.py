@@ -15,7 +15,7 @@
 from re import sub as re_sub, findall as re_findall
 from unicodedata import normalize
 from bs4 import BeautifulSoup, NavigableString, Tag
-from flask import current_app, url_for
+from flask import current_app, url_for, request
 
 
 def add_schedule(schedule, element):
@@ -74,6 +74,13 @@ def is_float(string):
         return False
     else:
         return True
+
+
+def cache_key(*args, **kwargs):
+    path = request.path
+    items = frozenset(request.args.items())
+    args = str(hash(items))
+    return ("{}.{}".format(path, args)).encode("utf-8")
 
 
 class Pagination(object):
