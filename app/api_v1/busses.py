@@ -19,7 +19,7 @@ from ..utils import parse_busses_article, cache_key
 
 
 @api.route("/school-busses/")
-@cache.cached(timeout=600, key_prefix=cache_key)
+@cache.cached(key_prefix=cache_key)
 def get_busses():
     article_id = current_app.config["JSONWS_BUSSES_ARTICLE_ID"]
     group_id = current_app.config["JSONWS_GROUP_ID"]

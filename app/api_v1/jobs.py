@@ -19,7 +19,7 @@ from ..utils import Pagination, get_article_content_by_type, cache_key
 
 
 @api.route("/jobs/")
-@cache.cached(timeout=600, key_prefix=cache_key)
+@cache.cached(key_prefix=cache_key)
 def get_jobs():
     category_id = current_app.config["JSONWS_JOBS_CATEGORY_ID"]
     pagination = Pagination("api.get_jobs", request.args)
@@ -47,7 +47,7 @@ def get_jobs():
 
 
 @api.route("/jobs/<int:id>")
-@cache.cached(timeout=600, key_prefix=cache_key)
+@cache.cached(key_prefix=cache_key)
 def get_job(id):
     result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)

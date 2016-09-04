@@ -42,6 +42,8 @@ class Config(object):
     JSONIFY_MIMETYPE = "application/json; charset=utf-8"
 
     CACHE_TYPE = "simple"
+    CACHE_DEFAULT_TIMEOUT = 600
+    CACHE_DIR = None
 
 
 class ProdConfig(Config):
