@@ -16,46 +16,36 @@ from re import sub as re_sub, findall as re_findall
 from unicodedata import normalize
 from bs4 import BeautifulSoup, NavigableString, Tag
 from flask import current_app, url_for, request
+from collections import OrderedDict
 
 
 def add_schedule(schedule, element):
-    name = normalize("NFKD", unicode(element)).strip()
+    name = normalize("NFKD", unicode(element.string)).strip()
     if len(name):
         times = re_findall("\d*[,.:]\d{2}", name)
         timetable = []
         for time in times:
             hour, minute = re_sub("[,.]", ":", time).split(":")
-            timetable.append("{:02d}:{:s}".format(int(hour), minute))
+            if len(hour):
+                timetable.append("{:02d}:{:s}".format(int(hour), minute))
         schedule.append({"time": timetable, "name": name})
 
 
-def traverse_schedule_tree(schedule, route, element):
-    for child in element.children:
-        if isinstance(child, Tag):
-            route = traverse_schedule_tree(schedule, route, child)
-        elif isinstance(child, NavigableString):
-            if route is None:
-                route = unicode(child).strip()
-            else:
-                add_schedule(schedule, child)
-    return route
-
-
 def parse_busses_article(cdata):
-    result = []
     soup = BeautifulSoup(cdata, current_app.config["HTML_PARSER"])
+    tags = soup.find_all("td")
 
-    paragraph_tags = soup.find_all("p")
     route = None
-    for tag in paragraph_tags:
-        schedule = []
-        route = traverse_schedule_tree(schedule, route, tag)
-
-        if len(schedule):
-            result.append((route, schedule))
-            route = None
-        if tag.strong is None:
-            route = None
+    result = []
+    for tag in tags:
+        if tag.strong is not None:
+            route = " ".join(tag.stripped_strings)
+            result.append({"route": route, "schedule": []})
+        else:
+            try:
+                add_schedule(result[-1]["schedule"], tag)
+            except IndexError:
+                pass
 
     return result
 

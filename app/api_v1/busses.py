@@ -26,7 +26,7 @@ def get_busses():
     article = kovtp.get_article(group_id, article_id)
     busses = parse_busses_article(article.get_content_as_html())
     return jsonify({
-        "school_busses": [{"route": r, "schedule": s} for r, s in busses],
+        "school_busses": busses,
         "meta": {
             "count": len(busses),
             "next_page": None,
