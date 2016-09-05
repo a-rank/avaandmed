@@ -99,7 +99,10 @@ class Article:
         link_tags = self.soup.find_all("a")
         for tag in link_tags:
             try:
-                result = urlparse(tag["href"])
+                href = tag.get("href")
+                if href is None:
+                    continue
+                result = urlparse(href)
                 if not result.scheme:
                     url = "".join([self.base_url, result.geturl()])
                 else:

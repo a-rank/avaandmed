@@ -33,7 +33,7 @@ def add_schedule(schedule, element):
 def parse_busses_article(cdata):
     soup = BeautifulSoup(cdata, current_app.config["HTML_PARSER"])
     tags = soup.find_all("td")
-
+    
     route = None
     result = []
     for tag in tags:
