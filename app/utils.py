@@ -16,7 +16,6 @@ from re import sub as re_sub, findall as re_findall
 from unicodedata import normalize
 from bs4 import BeautifulSoup, NavigableString, Tag
 from flask import current_app, url_for, request
-from collections import OrderedDict
 
 
 def add_schedule(schedule, element):
