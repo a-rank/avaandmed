@@ -18,6 +18,7 @@ from requests.exceptions import Timeout
 from time import sleep
 from .exceptions import HttpError
 from re import compile
+from fnmatch import filter, fnmatch
 
 
 def doku_property():
@@ -51,3 +52,12 @@ def get_with_retries(retries, retry_delay=2, **arguments):
 def extract_cadastral(text):
     pattern = compile("\d{5}:\d{3}:\d{4}")
     return set(pattern.findall(text))
+
+
+def filter_files_exclude(list, pattern, extension):
+    if len(list):
+        files = filter(list, pattern)
+        for file in files:
+            if not fnmatch(file, extension):
+                return file
+    return None

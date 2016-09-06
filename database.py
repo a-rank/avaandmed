@@ -208,6 +208,7 @@ def fetch():
 
     if not connection.is_connected():
         connection.reconnect(attempts=3, delay=1)
+
     prepared_cursor_document = connection.cursor(prepared=True)
     prepared_cursor_locations = connection.cursor(prepared=True)
     prepared_cursor_import = connection.cursor(prepared=True)
@@ -255,4 +256,5 @@ def fetch():
     prepared_cursor_locations.close()
     prepared_cursor_import.close()
     cursor_cadastral.close()
+
     connection.close()

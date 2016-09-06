@@ -134,8 +134,8 @@ class Doku(object):
                     setter(attributes, value)
         return files
 
-    def download_documents(self, topic_filter, folder, id_stop_at=None,
-                           delay=None, extract_text=False, callback=None):
+    def download_documents(self, topic_filter, folder, id_stop_at=None, delay=None,
+                           extract_text=False, callback=None, overwrite=False):
         downloaded_files = OrderedDict()
         documents = self.download_documents_list(topic_filter, folder)
         if len(documents):
@@ -143,25 +143,42 @@ class Doku(object):
                 stop_at = documents.keys().index(id_stop_at)
                 documents = OrderedDict(islice(documents.items(), 0, stop_at))
 
+            existing_files = []
+            if not overwrite:
+                existing_files = os.listdir(folder)
+
             for item_id, data in documents.items():
                 file_id, _, _, _ = data
-                url = self.create_document_url(item_id, file_id)
                 filepath = os.path.join(folder, str(item_id))
-                downloaded_file = self.download_file(url, filepath, extension_from_header=True)
+
+                existing_file = utils.filter_files_exclude(existing_files,
+                                                           "".join([str(item_id), ".*"]), "*.txt")
+                if not overwrite and existing_file is not None:
+                    downloaded_file = existing_file
+                    print ("found existing document: {}".format(existing_file))
+                else:
+                    url = self.create_document_url(item_id, file_id)
+                    downloaded_file = self.download_file(url, filepath, extension_from_header=True)
+                    if delay:
+                        sleep(delay)
+
                 downloaded_files[item_id] = {"file": downloaded_file,
                                              "data": data}
+
                 if extract_text:
-                    text = self.extract_document_text(downloaded_file)
                     text_file = "".join([filepath, ".txt"])
+                    if not overwrite and os.path.isfile(text_file):
+                        with io.open(text_file, "r", encoding="utf8") as f:
+                            text = f.read()
+                        print ("found existing text file: {}".format(text_file))
+                    else:
+                        text = self.extract_document_text(downloaded_file)
+                        with io.open(text_file, "w", encoding="utf8") as f:
+                            f.write(text)
                     downloaded_files[item_id]["text"] = text_file
                     downloaded_files[item_id]["cadastral"] = utils.extract_cadastral(text)
-                    with io.open(text_file, "w", encoding="utf8") as f:
-                        f.write(text)
 
                 if callback:
                     callback(item_id, downloaded_files[item_id])
-
-                if delay:
-                    sleep(delay)
 
         return downloaded_files
