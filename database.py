@@ -138,7 +138,8 @@ def create():
                        "	(50286,'Detailplaneeringute kehtestamine'),"
                        "	(50287,'Detailplaneeringute vastuvõtmine'),"
                        "	(50288,'Projekteerimistingimuste määramine'),"
-                       "	(50344,'Maakorraldus');")
+                       "	(50344,'Maakorraldus'),"
+                       "	(50365,'Vesi ja kanalisatsioon');")
 
         connection.commit()
         cursor.close()
@@ -197,13 +198,16 @@ def fetch():
                   " VALUES (?, ?, ?, ?)")
 
     app = manager.parent.app
-    connection = db.connection
+    connection = db.connect()
     id_stop_at = get_last_item_id(connection)
+    connection.close()
+
     doku = Doku(amphora_location=app.config["AMPHORA_LOCATION"])
     downloaded = doku.download_documents(id_stop_at=id_stop_at, topic_filter=app.config["AMPHORA_TOPICS"],
                                          delay=1, extract_text=True, callback=downloaded_callback,
                                          folder=app.config["TEMP_DIR"])
 
+    connection = db.connect()
     prepared_cursor_document = connection.cursor(prepared=True)
     prepared_cursor_locations = connection.cursor(prepared=True)
     prepared_cursor_import = connection.cursor(prepared=True)
@@ -234,12 +238,12 @@ def fetch():
                     print("Warning: cadastral already exist {}".format(number))
                 prepared_cursor_locations.execute(sql_locations, (document_id, number))
 
-    first_item_id = id_stop_at
+    last_imported_id = id_stop_at
     if len(downloaded):
-        first_item_id = downloaded.keys()[0]
+        last_imported_id = downloaded.keys()[0]
 
     try:
-        prepared_cursor_import.execute(sql_import, (imported, first_item_id, True, ""))
+        prepared_cursor_import.execute(sql_import, (imported, last_imported_id, True, ""))
     except Error as err:
         connection.rollback()
         print("Error {}, {}. Changes rollbacked".format(err.errno, err.msg))
@@ -251,3 +255,4 @@ def fetch():
     prepared_cursor_locations.close()
     prepared_cursor_import.close()
     cursor_cadastral.close()
+    connection.close()
