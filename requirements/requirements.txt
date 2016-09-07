@@ -1,8 +1,11 @@
 Flask == 0.11
+Flask_Caching == 1.0.1
 Flask_Script == 2.0.5
 fulltext == 0.4_1
+ijson == 2.3
+iso8601 == 0.1.11
+lxml == 3.6.0
 pyproj == 1.9.5.1
 requests == 2.7.0
 tqdm == 4.4.1
-beautifulsoup4 == 4.4.1
-lxml
+beautifulsoup4 == 4.5.1

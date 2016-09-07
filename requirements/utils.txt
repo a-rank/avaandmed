@@ -9,3 +9,4 @@ imagemagick
 pypdfocr
 ghostscript
 poppler
+mysql-connector-python
