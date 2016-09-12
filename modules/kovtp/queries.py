@@ -28,8 +28,9 @@ def get_asset_entries_by_category(url, username, password, category_id, start, e
 
 
 #: com.liferay.portlet.asset.service.AssetEntryServiceUtil#getEntries
-def get_asset_entries_by_class(url, username, password, class_name, start, end):
-    parameters = "+entryQuery/entryQuery.allCategoryIds/{id}".format(id=class_name)
+def get_asset_entries_by_category_by_class(url, username, password, category_id, class_name, start, end):
+    parameters = "+entryQuery/entryQuery.className/{class_name}/entryQuery.allCategoryIds/{id}".format(
+        class_name=class_name, id=category_id)
     paging = "entryQuery.start/{start}/entryQuery.end/{end}".format(start=start, end=end)
     url = "{base_url}/assetentry/get-entries/{parameters}/{paging}".format(base_url=url,
                                                                            parameters=parameters, paging=paging)

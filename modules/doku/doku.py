@@ -154,7 +154,7 @@ class Doku(object):
                 existing_file = utils.filter_files_exclude(existing_files,
                                                            "".join([str(item_id), ".*"]), "*.txt")
                 if not overwrite and existing_file is not None:
-                    downloaded_file = existing_file
+                    downloaded_file = os.path.join(folder, existing_file)
                     print ("found existing document: {}".format(existing_file))
                 else:
                     url = self.create_document_url(item_id, file_id)

@@ -23,7 +23,7 @@ from ..utils import Pagination, get_article_content_by_type, cache_key
 def get_jobs():
     category_id = current_app.config["JSONWS_JOBS_CATEGORY_ID"]
     pagination = Pagination("api.get_jobs", request.args)
-    assets = kovtp.get_assets(category_id, pagination.start(), pagination.end())
+    assets = kovtp.get_assets_articles(category_id, pagination.start(), pagination.end())
     jobs = []
     for asset in assets:
         article_primary_key = asset.get_primary_key()

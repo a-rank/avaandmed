@@ -23,7 +23,7 @@ from ..utils import Pagination, get_article_content_by_type, cache_key
 def get_all_news():
     category_id = current_app.config["JSONWS_NEWS_CATEGORY_ID"]
     pagination = Pagination("api.get_all_news", request.args)
-    assets = kovtp.get_assets(category_id, pagination.start(), pagination.end())
+    assets = kovtp.get_assets_articles(category_id, pagination.start(), pagination.end())
     news = []
     for asset in assets:
         article_primary_key = asset.get_primary_key()

@@ -39,16 +39,27 @@ class Kovtp(object):
         if html_parser is not None:
             self.html_parser = html_parser
 
-    def get_assets(self, category_id, start, end):
-        assets = queries.get_asset_entries_by_category(self.jsonws_url, self.jsonws_username, self.jsonws_password,
-                                                       category_id, start, end)
+    def get_assets_articles(self, category_id, start, end):
+        assets = queries.get_asset_entries_by_category_by_class(url=self.jsonws_url,
+                                                                username=self.jsonws_username,
+                                                                password=self.jsonws_password,
+                                                                category_id=category_id,
+                                                                class_name="com.liferay.portlet.journal.model.JournalArticle",
+                                                                start=start,
+                                                                end=end)
         return [Asset(asset) for asset in assets]
 
     def get_article(self, group_id, article_id):
-        article = queries.get_article(self.jsonws_url, self.jsonws_username, self.jsonws_password, group_id,
-                                      article_id)
+        article = queries.get_article(url=self.jsonws_url,
+                                      username=self.jsonws_username,
+                                      password=self.jsonws_password,
+                                      group_id=group_id,
+                                      article_id=article_id)
         return Article(article, self.portal_url, self.html_parser)
 
     def get_latest_article(self, primary_key):
-        article = queries.get_latest_article(self.jsonws_url, self.jsonws_username, self.jsonws_password, primary_key)
+        article = queries.get_latest_article(url=self.jsonws_url,
+                                             username=self.jsonws_username,
+                                             password=self.jsonws_password,
+                                             resource_prim_key=primary_key)
         return Article(article, self.portal_url, self.html_parser)
