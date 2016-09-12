@@ -25,6 +25,7 @@ class Kovtp(object):
     html_parser = kovtp_property()
     portal_url = kovtp_property()
     jsonws_url = kovtp_property()
+    article_asset_class = "com.liferay.portlet.journal.model.JournalArticle"
 
     def __init__(self, jsonws_url=None, portal_url=None, jsonws_username=None,
                  jsonws_password=None, html_parser=None):
@@ -44,7 +45,7 @@ class Kovtp(object):
                                                                 username=self.jsonws_username,
                                                                 password=self.jsonws_password,
                                                                 category_id=category_id,
-                                                                class_name="com.liferay.portlet.journal.model.JournalArticle",
+                                                                class_name=self.article_asset_class,
                                                                 start=start,
                                                                 end=end)
         return [Asset(asset) for asset in assets]
