@@ -14,7 +14,7 @@
 
 from flask import jsonify, current_app, url_for, request
 from . import api
-from ..utils import Pagination
+from ..utils import Pagination, response_headers
 from ..models import fetch_documents, fetch_document_or_404
 
 
@@ -34,16 +34,18 @@ def get_documents():
                                 search=search)
 
     documents_count = len(documents)
-    return jsonify({
+    response = response_headers(jsonify({
         "documents": [document.to_json() for document in documents],
         "meta": {
             "count": documents_count,
             "next_page": pagination.next_url(documents_count),
             "previous_page": pagination.prev_url()}
-    })
+    }))
+    return response.make_conditional(request)
 
 
 @api.route("/documents/<int:id>")
 def get_document(id):
     document = fetch_document_or_404(id)
-    return jsonify(document.to_json())
+    response = response_headers(jsonify(document.to_json()))
+    return response.make_conditional(request)

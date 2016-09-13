@@ -41,9 +41,6 @@ class Config(object):
     JSON_AS_ASCII = False
     JSONIFY_MIMETYPE = "application/json; charset=utf-8"
 
-    CACHE_DEFAULT_TIMEOUT = 600
-    CACHE_DIR = None
-
 
 class ProdConfig(Config):
     DEBUG = False
@@ -52,8 +49,6 @@ class ProdConfig(Config):
     MYSQL_DB = "avaandmed"
     MYSQL_HOST = "localhost"
 
-    CACHE_TYPE = "simple"
-
 
 class DevConfig(Config):
     DEBUG = True
@@ -61,6 +56,3 @@ class DevConfig(Config):
 
     MYSQL_DB = "avaandmed"
     MYSQL_HOST = "localhost"
-
-    CACHE_TYPE = "null"
-    CACHE_NO_NULL_WARNING = True

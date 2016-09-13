@@ -14,12 +14,11 @@
 
 from flask import jsonify, current_app, url_for, request
 from . import api
-from .. import cache, kovtp
-from ..utils import Pagination, get_article_content_by_type, cache_key
+from .. import kovtp
+from ..utils import Pagination, get_article_content_by_type, response_headers
 
 
 @api.route("/jobs/")
-@cache.cached(key_prefix=cache_key)
 def get_jobs():
     category_id = current_app.config["JSONWS_JOBS_CATEGORY_ID"]
     pagination = Pagination("api.get_jobs", request.args)
@@ -37,22 +36,22 @@ def get_jobs():
                 "title": asset.get_title()
             })
     assets_count = len(assets)
-    return jsonify({
+    response = response_headers(jsonify({
         "jobs": jobs,
         "meta": {
             "count": assets_count,
             "next_page": pagination.next_url(assets_count),
             "previous_page": pagination.prev_url()}
-    })
+    }))
+    return response.make_conditional(request)
 
 
 @api.route("/jobs/<int:id>")
-@cache.cached(key_prefix=cache_key)
 def get_job(id):
     result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)
     links, documents = article.get_document_links()
-    return jsonify({
+    response = response_headers(jsonify({
         "id": id,
         "url": url_for("api.get_job", id=id, _external=True),
         "created_date": article.get_create_date(),
@@ -65,4 +64,5 @@ def get_job(id):
         },
         "content": get_article_content_by_type(article, result_type),
         "portal_url": article.get_url_title()
-    })
+    }))
+    return response.make_conditional(request)

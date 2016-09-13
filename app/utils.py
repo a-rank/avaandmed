@@ -33,7 +33,7 @@ def add_schedule(schedule, element):
 def parse_busses_article(cdata):
     soup = BeautifulSoup(cdata, current_app.config["HTML_PARSER"])
     tags = soup.find_all("td")
-    
+
     route = None
     result = []
     for tag in tags:
@@ -65,11 +65,12 @@ def is_float(string):
         return True
 
 
-def cache_key(*args, **kwargs):
-    path = request.path
-    items = frozenset(request.args.items())
-    args = str(hash(items))
-    return ("{}.{}".format(path, args)).encode("utf-8")
+def response_headers(response, last_modified=None):
+    response.add_etag()
+    response.content_length = len(response.get_data())
+    if last_modified:
+        response.last_modified = last_modified
+    return response
 
 
 class Pagination(object):
