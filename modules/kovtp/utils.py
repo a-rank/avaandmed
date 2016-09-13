@@ -27,6 +27,14 @@ def timestamp_to_8601(timestamp):
         return ""
 
 
+def timestamp_to_datetime(timestamp):
+    int_timestamp = int(timestamp if timestamp is not None else 0)
+    if int_timestamp:
+        return datetime(1970, 1, 1) + timedelta(milliseconds=int_timestamp)
+    else:
+        return ""
+
+
 def get_cdata_from_content(content):
     root = etree.fromstring(content)
     contents = root.xpath("//static-content[@language-id='et_EE']")

@@ -30,8 +30,8 @@ def get_all_news():
             news.append({
                 "id": article_primary_key,
                 "url": url_for("api.get_news", id=article_primary_key, _external=True),
-                "created_date": asset.get_create_date(),
-                "modified_date": asset.get_modified_date(),
+                "created_date": asset.get_create_date_8601(),
+                "modified_date": asset.get_modified_date_8601(),
                 "title": asset.get_title()
             })
     assets_count = len(assets)
@@ -52,8 +52,8 @@ def get_news(id):
     links, documents = article.get_document_links()
     response = response_headers(jsonify({
         "id": id,
-        "created_date": article.get_create_date(),
-        "modified_date": article.get_modified_date(),
+        "created_date": article.get_create_date_8601(),
+        "modified_date": article.get_modified_date_8601(),
         "title": article.get_title(),
         "url": url_for("api.get_news", id=id, _external=True),
         "links": {
@@ -63,5 +63,5 @@ def get_news(id):
         },
         "content": get_article_content_by_type(article, result_type),
         "portal_url": article.get_url_title()
-    }))
+    }), article.get_modified_datetime())
     return response.make_conditional(request)

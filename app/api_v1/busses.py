@@ -30,5 +30,5 @@ def get_busses():
             "count": len(busses),
             "next_page": None,
             "previous_page": None}
-    }))
+    }), article.get_modified_datetime())
     return response.make_conditional(request)

@@ -36,16 +36,16 @@ class Asset:
     def get_entry_id(self):
         return self.asset.get("entryId", 0)
 
-    def get_create_date(self):
+    def get_create_date_8601(self):
         return timestamp_to_8601(self.asset.get("createDate", ""))
 
-    def get_expiration_date(self):
+    def get_expiration_date_8601(self):
         return timestamp_to_8601(self.asset.get("expirationDate", ""))
 
-    def get_modified_date(self):
+    def get_modified_date_8601(self):
         return timestamp_to_8601(self.asset.get("modifiedDate", ""))
 
-    def get_publish_date(self):
+    def get_publish_date_8601(self):
         return timestamp_to_8601(self.asset.get("publishDate", ""))
 
     def get_group_id(self):

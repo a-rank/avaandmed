@@ -16,7 +16,7 @@ from urlparse import urlparse
 from utils import get_content_from_article, get_cdata_from_content
 from bs4 import BeautifulSoup
 from re import compile
-from .utils import timestamp_to_8601
+from .utils import timestamp_to_8601, timestamp_to_datetime
 
 
 class Article:
@@ -48,14 +48,17 @@ class Article:
     def get_company_id(self):
         return self.article.get("companyId", 0)
 
-    def get_create_date(self):
+    def get_create_date_8601(self):
         return timestamp_to_8601(self.article.get("createDate", ""))
 
-    def get_expiration_date(self):
+    def get_expiration_date_8601(self):
         return timestamp_to_8601(self.article.get("expirationDate", ""))
 
-    def get_modified_date(self):
+    def get_modified_date_8601(self):
         return timestamp_to_8601(self.article.get("modifiedDate", ""))
+
+    def get_modified_datetime(self):
+        return timestamp_to_datetime(self.article.get("modifiedDate", ""))
 
     def get_description(self):
         return self.article.get("description", "")

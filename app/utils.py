@@ -67,7 +67,8 @@ def is_float(string):
 
 def response_headers(response, last_modified=None):
     response.add_etag()
-    response.content_length = len(response.get_data())
+    response_data = response.get_data()
+    response.content_length = len(response_data)
     if last_modified:
         response.last_modified = last_modified
     return response

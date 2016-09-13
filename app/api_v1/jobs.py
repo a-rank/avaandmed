@@ -30,9 +30,9 @@ def get_jobs():
             jobs.append({
                 "id": article_primary_key,
                 "url": url_for("api.get_job", id=article_primary_key, _external=True),
-                "created_date": asset.get_create_date(),
-                "expiration_date": asset.get_expiration_date(),
-                "modified_date": asset.get_modified_date(),
+                "created_date": asset.get_create_date_8601(),
+                "expiration_date": asset.get_expiration_date_8601(),
+                "modified_date": asset.get_modified_date_8601(),
                 "title": asset.get_title()
             })
     assets_count = len(assets)
@@ -54,8 +54,8 @@ def get_job(id):
     response = response_headers(jsonify({
         "id": id,
         "url": url_for("api.get_job", id=id, _external=True),
-        "created_date": article.get_create_date(),
-        "expiration_date": article.get_expiration_date(),
+        "created_date": article.get_create_date_8601(),
+        "expiration_date": article.get_expiration_date_8601(),
         "title": article.get_title(),
         "links": {
             "images": article.get_image_links(),
@@ -64,5 +64,5 @@ def get_job(id):
         },
         "content": get_article_content_by_type(article, result_type),
         "portal_url": article.get_url_title()
-    }))
+    }), article.get_modified_datetime())
     return response.make_conditional(request)
