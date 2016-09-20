@@ -32,7 +32,7 @@ class Config(object):
     PORTAL_URL = "https://www.kuusalu.ee"
     HTML_PARSER = "lxml"
 
-    AMPHORA_TOPICS = [5059, 50285, 50286, 50287, 50288, 50344, 50365]
+    AMPHORA_TOPICS = [5059, 50285, 50286, 50287, 50288, 50344, 50365, 40002, 5075]
     AMPHORA_LOCATION = "kuusaluvv"
 
     MYSQL_USER = os.environ.get("MYSQL_USER")

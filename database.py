@@ -139,6 +139,8 @@ def create():
                        "	(50287,'Detailplaneeringute vastuvõtmine'),"
                        "	(50288,'Projekteerimistingimuste määramine'),"
                        "	(50344,'Maakorraldus'),"
+                       "    (40002,'Vallavalitsuse korraldus'),"
+                       "    (5075,'Volikogu otsus'),"
                        "	(50365,'Vesi ja kanalisatsioon');")
 
         connection.commit()

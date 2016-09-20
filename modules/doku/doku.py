@@ -26,6 +26,7 @@ from cgi import parse_header
 from itertools import islice
 from pyproj import Proj, transform
 from .exceptions import HttpError, GeocodeError
+from uuid import uuid1
 
 
 class Doku(object):
@@ -36,7 +37,7 @@ class Doku(object):
             raise ValueError
         else:
             self.amphora_url = "http://atp.amphora.ee/{location}".format(location=amphora_location)
-            self.amphora_api_url = "{amphora_url}/api/act".format(amphora_url=self.amphora_url)
+            self.amphora_api_url = "{amphora_url}/api/item".format(amphora_url=self.amphora_url)
 
     def create_document_url(self, item_id, item_file_id):
         return "{amphora_url}/?itm={itm}&af={af}".format(amphora_url=self.amphora_url,
@@ -105,24 +106,24 @@ class Doku(object):
         return text
 
     def download_documents_list(self, topic_filter, folder):
-        filepath = os.path.join(folder, "act.json")
+        filepath = os.path.join(folder, "".join([uuid1().hex, ".json"]))
         self.download_file(self.amphora_api_url, filepath)
 
         files = OrderedDict()
         attributes = defaultdict(int)
         setters = {
-            "Acts.item.topic_id.number": lambda attributes, value: setitem(attributes, "topic_id", value),
-            "Acts.item.item_id.number": lambda attributes, value: setitem(attributes, "item_id", value),
-            "Acts.item.item_file_id.number": lambda attributes, value: setitem(attributes, "file_id", value),
-            "Acts.item.public_title.string": lambda attributes, value: setitem(attributes, "title", value),
-            "Acts.item.object_date.string": lambda attributes, value: setitem(attributes, "date", value),
-            "Acts.item.end_map": lambda attributes, value: attributes.clear()
+            "Items.item.topic_id.number": lambda attributes, value: setitem(attributes, "topic_id", value),
+            "Items.item.item_id.number": lambda attributes, value: setitem(attributes, "item_id", value),
+            "Items.item.item_file_id.number": lambda attributes, value: setitem(attributes, "file_id", value),
+            "Items.item.public_title.string": lambda attributes, value: setitem(attributes, "title", value),
+            "Items.item.object_date.string": lambda attributes, value: setitem(attributes, "date", value),
+            "Items.item.end_map": lambda attributes, value: attributes.clear()
         }
 
         with io.open(filepath, "r") as f:
             parser = ijson_parse(f)
             for prefix, event, value in parser:
-                if (prefix, event) == ("Acts.item", "end_map"):
+                if (prefix, event) == ("Items.item", "end_map"):
                     if attributes["topic_id"] in topic_filter and attributes["item_id"] and attributes["file_id"]:
                         files[attributes["item_id"]] = (attributes["file_id"],
                                                         attributes["topic_id"],
