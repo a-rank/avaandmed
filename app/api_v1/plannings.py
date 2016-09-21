@@ -45,7 +45,7 @@ def get_plannings():
     return response.make_conditional(request)
 
 
-@api.route("/planning/<int:id>")
+@api.route("/plannings/<int:id>")
 def get_planning(id):
     result_type = request.args.get("result", "plain", type=str)
     article = kovtp.get_latest_article(id)
